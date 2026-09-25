@@ -141,3 +141,7 @@ MAILERS = {
     },
 }
 CORS_ALLOW_ALL_ORIGINS = True  #Linea para que Flutter se conecte
+
+# Configuración para archivos multimedia (imágenes de publicaciones)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
