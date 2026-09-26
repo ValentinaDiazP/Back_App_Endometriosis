@@ -22,8 +22,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/bienestar/', include('bienestar.urls')),   # Tu módulo     # Compañera 3
+    path('api/usuarios/', include('usuarios.urls')),
     # Comentados hasta que tus compañeras creen sus apps y archivos urls.py:
-    # path('api/sintomas/', include('sintomas.urls')),   
+    path('api/sintomas/', include('sintomas.urls')),  
     # path('api/reportes/', include('reportes.urls')),     
     # path('api/educativo/', include('educativo.urls')),
 ]
