@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -116,3 +117,74 @@ class RutaAprendizajeContenido(models.Model):
 
     def __str__(self):
         return f"{self.ruta} #{self.orden}: {self.contenido}"
+
+
+# ---------------------------------------------------------------------------
+# Datos de cada usuaria. Siempre se filtran por request.user en las vistas;
+# el frontend nunca envía el id de la usuaria.
+# ---------------------------------------------------------------------------
+
+
+class PreferenciaUsuario(models.Model):
+    """Categorías que la usuaria eligió en el onboarding o en 'Mis preferencias'."""
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='preferencias_educativas',
+    )
+    categoria = models.ForeignKey(CategoriaContenido, on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['usuario', 'categoria'], name='preferencia_unica'),
+        ]
+        verbose_name = 'preferencia de usuaria'
+        verbose_name_plural = 'preferencias de usuarias'
+
+    def __str__(self):
+        return f"{self.usuario.username} → {self.categoria}"
+
+
+class InteraccionContenido(models.Model):
+    """Una fila por usuaria y contenido; se crea al marcarlo como leído."""
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='interacciones_contenido',
+    )
+    contenido = models.ForeignKey(ContenidoEducativo, on_delete=models.CASCADE)
+    completado = models.BooleanField(default=True)
+    fecha = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        constraints = [
+            models.UniqueConstraint(fields=['usuario', 'contenido'], name='interaccion_unica'),
+        ]
+        verbose_name = 'interacción con contenido'
+        verbose_name_plural = 'interacciones con contenido'
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.contenido}"
+
+
+class RegistroEjercicio(models.Model):
+    """Cada vez que la usuaria completa un ejercicio (puede repetirlo)."""
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='registros_ejercicio',
+    )
+    ejercicio = models.ForeignKey(EjercicioPsicoeducativo, on_delete=models.CASCADE)
+    fecha = models.DateTimeField(auto_now_add=True)
+    # Opcionales: la pantalla actual aún no los pide.
+    respuestas = models.TextField(blank=True)
+    utilidad = models.PositiveSmallIntegerField(null=True, blank=True)  # 1 a 5
+
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name = 'registro de ejercicio'
+        verbose_name_plural = 'registros de ejercicio'
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.ejercicio} ({self.fecha:%Y-%m-%d})"

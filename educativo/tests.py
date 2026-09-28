@@ -58,3 +58,80 @@ class CatalogoEducativoTests(APITestCase):
     def test_catalogo_es_de_solo_lectura(self):
         respuesta = self.client.post('/api/educativo/categorias/', {'id': 'x', 'nombre': 'X'})
         self.assertEqual(respuesta.status_code, 405)
+
+
+class DatosUsuariaTests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.ana = User.objects.create_user(username='ana', password='secreta123')
+        self.bea = User.objects.create_user(username='bea', password='secreta123')
+        self._autenticar(self.ana)
+
+    def _autenticar(self, usuaria):
+        token, _ = Token.objects.get_or_create(user=usuaria)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+    # --- Preferencias ---
+
+    def test_preferencias_vacias_al_inicio(self):
+        respuesta = self.client.get('/api/educativo/preferencias/')
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.json(), {'categorias': []})
+
+    def test_guardar_y_reemplazar_preferencias(self):
+        self.client.put('/api/educativo/preferencias/', {'categorias': ['cat_dolor', 'cat_autocuidado']}, format='json')
+        respuesta = self.client.put('/api/educativo/preferencias/', {'categorias': ['cat_endometriosis']}, format='json')
+        self.assertEqual(respuesta.status_code, 200)
+        guardadas = self.client.get('/api/educativo/preferencias/').json()['categorias']
+        self.assertEqual(guardadas, ['cat_endometriosis'])
+
+    def test_preferencias_rechaza_categoria_inexistente(self):
+        respuesta = self.client.put('/api/educativo/preferencias/', {'categorias': ['cat_inventada']}, format='json')
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertEqual(self.client.get('/api/educativo/preferencias/').json()['categorias'], [])
+
+    def test_preferencias_son_de_cada_usuaria(self):
+        self.client.put('/api/educativo/preferencias/', {'categorias': ['cat_dolor']}, format='json')
+        self._autenticar(self.bea)
+        self.assertEqual(self.client.get('/api/educativo/preferencias/').json()['categorias'], [])
+
+    # --- Progreso de contenidos ---
+
+    def test_marcar_contenido_completado_no_duplica(self):
+        primera = self.client.post('/api/educativo/interacciones-contenido/', {'contenido': 'c1'}, format='json')
+        segunda = self.client.post('/api/educativo/interacciones-contenido/', {'contenido': 'c1'}, format='json')
+        self.assertEqual(primera.status_code, 201)
+        self.assertEqual(segunda.status_code, 200)
+        lista = self.client.get('/api/educativo/interacciones-contenido/').json()
+        self.assertEqual([(i['contenido'], i['completado']) for i in lista], [('c1', True)])
+
+    def test_contenido_inexistente_da_400(self):
+        respuesta = self.client.post('/api/educativo/interacciones-contenido/', {'contenido': 'zzz'}, format='json')
+        self.assertEqual(respuesta.status_code, 400)
+
+    def test_progreso_es_de_cada_usuaria(self):
+        self.client.post('/api/educativo/interacciones-contenido/', {'contenido': 'c1'}, format='json')
+        self.client.post('/api/educativo/registros-ejercicio/', {'ejercicio': 'e1'}, format='json')
+        self._autenticar(self.bea)
+        self.assertEqual(self.client.get('/api/educativo/interacciones-contenido/').json(), [])
+        self.assertEqual(self.client.get('/api/educativo/registros-ejercicio/').json(), [])
+
+    # --- Registros de ejercicio ---
+
+    def test_registrar_ejercicio(self):
+        respuesta = self.client.post(
+            '/api/educativo/registros-ejercicio/',
+            {'ejercicio': 'e2', 'respuestas': 'Pensamiento más balanceado', 'utilidad': 4},
+            format='json',
+        )
+        self.assertEqual(respuesta.status_code, 201)
+        datos = respuesta.json()
+        self.assertEqual((datos['ejercicio'], datos['utilidad']), ('e2', 4))
+
+    def test_registrar_ejercicio_sin_campos_opcionales(self):
+        respuesta = self.client.post('/api/educativo/registros-ejercicio/', {'ejercicio': 'e1'}, format='json')
+        self.assertEqual(respuesta.status_code, 201)
+
+    def test_utilidad_fuera_de_rango_da_400(self):
+        respuesta = self.client.post('/api/educativo/registros-ejercicio/', {'ejercicio': 'e1', 'utilidad': 9}, format='json')
+        self.assertEqual(respuesta.status_code, 400)

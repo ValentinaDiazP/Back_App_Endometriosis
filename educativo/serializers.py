@@ -4,6 +4,8 @@ from .models import (
     CategoriaContenido,
     ContenidoEducativo,
     EjercicioPsicoeducativo,
+    InteraccionContenido,
+    RegistroEjercicio,
     RutaAprendizaje,
 )
 
@@ -42,3 +44,35 @@ class RutaAprendizajeSerializer(serializers.ModelSerializer):
     def get_contenidos(self, ruta):
         pasos = ruta.pasos.all()  # ya viene ordenado por `orden`
         return ContenidoEducativoSerializer([p.contenido for p in pasos], many=True).data
+
+
+class PreferenciasSerializer(serializers.Serializer):
+    """Lista completa de categorías preferidas: {"categorias": ["cat_dolor", ...]}"""
+    categorias = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+
+    def validate_categorias(self, ids):
+        ids = list(dict.fromkeys(ids))  # sin repetidos, conservando el orden
+        existentes = set(CategoriaContenido.objects.filter(id__in=ids).values_list('id', flat=True))
+        desconocidas = [i for i in ids if i not in existentes]
+        if desconocidas:
+            raise serializers.ValidationError(f"Categorías inexistentes: {', '.join(desconocidas)}")
+        return ids
+
+
+class InteraccionContenidoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InteraccionContenido
+        fields = ['id', 'contenido', 'completado', 'fecha']
+        read_only_fields = ['id', 'fecha']
+        # La unicidad (usuaria, contenido) la resuelve la vista con
+        # update_or_create, así que marcar dos veces no es un error.
+        validators = []
+
+
+class RegistroEjercicioSerializer(serializers.ModelSerializer):
+    utilidad = serializers.IntegerField(min_value=1, max_value=5, required=False, allow_null=True)
+
+    class Meta:
+        model = RegistroEjercicio
+        fields = ['id', 'ejercicio', 'fecha', 'respuestas', 'utilidad']
+        read_only_fields = ['id', 'fecha']

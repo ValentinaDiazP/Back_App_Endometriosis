@@ -4,6 +4,9 @@ from .models import (
     CategoriaContenido,
     ContenidoEducativo,
     EjercicioPsicoeducativo,
+    InteraccionContenido,
+    PreferenciaUsuario,
+    RegistroEjercicio,
     RutaAprendizaje,
     RutaAprendizajeContenido,
 )
@@ -37,3 +40,21 @@ class RutaAprendizajeContenidoInline(admin.TabularInline):
 class RutaAprendizajeAdmin(admin.ModelAdmin):
     list_display = ['id', 'nombre']
     inlines = [RutaAprendizajeContenidoInline]
+
+
+@admin.register(PreferenciaUsuario)
+class PreferenciaUsuarioAdmin(admin.ModelAdmin):
+    list_display = ['usuario', 'categoria']
+    list_filter = ['categoria']
+
+
+@admin.register(InteraccionContenido)
+class InteraccionContenidoAdmin(admin.ModelAdmin):
+    list_display = ['usuario', 'contenido', 'completado', 'fecha']
+    list_filter = ['completado', 'contenido']
+
+
+@admin.register(RegistroEjercicio)
+class RegistroEjercicioAdmin(admin.ModelAdmin):
+    list_display = ['usuario', 'ejercicio', 'fecha', 'utilidad']
+    list_filter = ['ejercicio']
