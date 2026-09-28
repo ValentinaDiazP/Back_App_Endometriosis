@@ -3,17 +3,12 @@ from django.contrib.auth.models import User
 
 # ==============================================================================
 # MÓDULO: PROFESIONALES
-# Descripción: Modelos para la gestión de profesionales y directorio de atención.
 # ==============================================================================
-
 class Professional(models.Model):
-    """
-    Representa a un especialista/profesional disponible en la plataforma.
-    """
     name = models.CharField(max_length=150, verbose_name="Nombre Completo")
     specialty = models.CharField(max_length=150, verbose_name="Especialidad")
-    rate = models.CharField(max_length=50, verbose_name="Tarifa")  # Ej: "$150.000 COP"
-    availability = models.CharField(max_length=100, verbose_name="Disponibilidad")  # Ej: "Disponible hoy"
+    rate = models.CharField(max_length=50, verbose_name="Tarifa")
+    availability = models.CharField(max_length=100, verbose_name="Disponibilidad")
 
     class Meta:
         verbose_name = "Profesional"
@@ -24,16 +19,19 @@ class Professional(models.Model):
 
 
 # ==============================================================================
-# MÓDULO: COMUNIDAD (Feed, Publicaciones y Comentarios)
-# Descripción: Permite a las usuarias crear publicaciones con texto/imagen y comentar.
+# MÓDULO: COMUNIDAD (Feed, Moderación, Likes, Comentarios, Reportes)
 # ==============================================================================
 class Publicacion(models.Model):
-    # TODO: [PENDIENTE REGISTRO] 'null=True' y 'blank=True' son temporales.
-    # Cuando se implemente el login/registro, quitar 'null=True, blank=True'
-    # para requerir obligatoriamente una usuaria registrada.
+    ESTADOS = (
+        ('PENDIENTE', 'Pendiente'),
+        ('APROBADO', 'Aprobado'),
+        ('RECHAZADO', 'Rechazado'),
+    )
+
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='publicaciones', null=True, blank=True, verbose_name="Autora")
     contenido = models.TextField(verbose_name="Contenido del texto")
     imagen = models.ImageField(upload_to='comunidad/', blank=True, null=True, verbose_name="Imagen adjunta")
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='APROBADO')
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de publicación")
 
     class Meta:
@@ -43,11 +41,24 @@ class Publicacion(models.Model):
 
     def __str__(self):
         nombre = self.usuario.username if self.usuario else "Anónima"
-        return f"Publicación de {nombre} - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
+        return f"Publicación de {nombre} - [{self.estado}] - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
+
+
+class MeGusta(models.Model):
+    publicacion = models.ForeignKey(Publicacion, on_delete=models.CASCADE, related_name='likes', verbose_name="Publicación")
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes', verbose_name="Usuaria")
+    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
+
+    class Meta:
+        verbose_name = "Me gusta"
+        verbose_name_plural = "Me gusta"
+        unique_together = ('publicacion', 'usuario')
+
+    def __str__(self):
+        return f"Like de {self.usuario.username} en post #{self.publicacion.id}"
 
 
 class Comentario(models.Model):
-    # TODO: [PENDIENTE REGISTRO] 'null=True' y 'blank=True' son temporales.
     publicacion = models.ForeignKey(Publicacion, on_delete=models.CASCADE, related_name='comentarios', verbose_name="Publicación")
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comentarios', null=True, blank=True, verbose_name="Autora del comentario")
     texto = models.TextField(verbose_name="Texto del comentario")
@@ -61,3 +72,19 @@ class Comentario(models.Model):
     def __str__(self):
         nombre = self.usuario.username if self.usuario else "Anónima"
         return f"Comentario de {nombre} en post #{self.publicacion.id}"
+
+
+class ReportePublicacion(models.Model):
+    publicacion = models.ForeignKey(Publicacion, on_delete=models.CASCADE, related_name='reportes', verbose_name="Publicación reportada")
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reportes_creados', verbose_name="Usuaria que reporta")
+    motivo = models.TextField(verbose_name="Motivo del reporte")
+    resuelto = models.BooleanField(default=False, verbose_name="Resuelto")
+    fecha_reporte = models.DateTimeField(auto_now_add=True, verbose_name="Fecha del reporte")
+
+    class Meta:
+        verbose_name = "Reporte de publicación"
+        verbose_name_plural = "Reportes de publicaciones"
+        ordering = ['-fecha_reporte']
+
+    def __str__(self):
+        return f"Reporte sobre post #{self.publicacion.id} por {self.usuario.username}"
