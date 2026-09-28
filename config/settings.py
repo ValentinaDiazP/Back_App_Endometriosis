@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Paquetes de terceros para la API y comunicación
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
 
     # Módulos de la aplicación
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     'educativo',
     'reportes',
     'sintomas',
+    'usuarios',
 ]
 
 MIDDLEWARE = [
@@ -141,3 +143,13 @@ MAILERS = {
     },
 }
 CORS_ALLOW_ALL_ORIGINS = True  #Linea para que Flutter se conecte
+
+# Configuración para archivos multimedia (imágenes de publicaciones)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}

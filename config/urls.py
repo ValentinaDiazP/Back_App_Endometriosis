@@ -15,21 +15,20 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-
-from django.contrib import admin
 from django.urls import path, include
-
-from django.contrib import admin
-from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/bienestar/', include('bienestar.urls')),   # Tu módulo     # Compañera 3
+    path('api/usuarios/', include('usuarios.urls')),
     # Comentados hasta que tus compañeras creen sus apps y archivos urls.py:
-    # path('api/sintomas/', include('sintomas.urls')),   
+    path('api/sintomas/', include('sintomas.urls')),  
     # path('api/reportes/', include('reportes.urls')),     
     # path('api/educativo/', include('educativo.urls')),
 ]
-
+# Servir archivos de imagen subidos localmente
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
