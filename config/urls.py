@@ -26,7 +26,7 @@ urlpatterns = [
     # Comentados hasta que tus compañeras creen sus apps y archivos urls.py:
     path('api/sintomas/', include('sintomas.urls')),  
     # path('api/reportes/', include('reportes.urls')),     
-    # path('api/educativo/', include('educativo.urls')),
+    path('api/educativo/', include('educativo.urls')),
 ]
 # Servir archivos de imagen subidos localmente
 if settings.DEBUG:
