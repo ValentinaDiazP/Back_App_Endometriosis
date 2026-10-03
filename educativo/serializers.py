@@ -22,14 +22,14 @@ class ContenidoEducativoSerializer(serializers.ModelSerializer):
         model = ContenidoEducativo
         fields = [
             'id', 'categoria', 'titulo', 'tipo', 'nivel', 'es_premium',
-            'fecha_publicacion', 'resumen', 'cuerpo', 'minutos_estimados',
+            'fecha_publicacion', 'resumen', 'cuerpo', 'minutos_estimados', 'url_recurso',
         ]
 
 
 class EjercicioPsicoeducativoSerializer(serializers.ModelSerializer):
     class Meta:
         model = EjercicioPsicoeducativo
-        fields = ['id', 'nombre', 'tipo', 'descripcion', 'instrucciones', 'minutos_estimados']
+        fields = ['id', 'nombre', 'tipo', 'descripcion', 'instrucciones', 'minutos_estimados', 'url_recurso']
 
 
 class RutaAprendizajeSerializer(serializers.ModelSerializer):

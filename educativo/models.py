@@ -51,6 +51,9 @@ class ContenidoEducativo(models.Model):
     resumen = models.CharField(max_length=300)
     cuerpo = models.TextField()
     minutos_estimados = models.PositiveSmallIntegerField()
+    # Opcional: enlace al video o podcast (YouTube, Spotify, etc.). La app
+    # muestra un botón para abrirlo fuera de Florecer.
+    url_recurso = models.URLField(max_length=500, blank=True)
 
     class Meta:
         ordering = ['fecha_publicacion', 'id']
@@ -73,6 +76,8 @@ class EjercicioPsicoeducativo(models.Model):
     descripcion = models.TextField()
     instrucciones = models.TextField()
     minutos_estimados = models.PositiveSmallIntegerField()
+    # Opcional: audio o video guiado externo (YouTube, Spotify, etc.).
+    url_recurso = models.URLField(max_length=500, blank=True)
 
     class Meta:
         ordering = ['id']
