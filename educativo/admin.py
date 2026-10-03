@@ -19,15 +19,23 @@ class CategoriaContenidoAdmin(admin.ModelAdmin):
 
 @admin.register(ContenidoEducativo)
 class ContenidoEducativoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'titulo', 'categoria', 'tipo', 'nivel', 'es_premium', 'fecha_publicacion']
+    list_display = ['id', 'titulo', 'categoria', 'tipo', 'nivel', 'es_premium', 'fecha_publicacion', 'tiene_enlace']
     list_filter = ['categoria', 'tipo', 'nivel', 'es_premium']
     search_fields = ['titulo', 'resumen']
+
+    @admin.display(boolean=True, description='¿Tiene enlace?')
+    def tiene_enlace(self, obj):
+        return bool(obj.url_recurso)
 
 
 @admin.register(EjercicioPsicoeducativo)
 class EjercicioPsicoeducativoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'nombre', 'tipo', 'minutos_estimados']
+    list_display = ['id', 'nombre', 'tipo', 'minutos_estimados', 'tiene_enlace']
     list_filter = ['tipo']
+
+    @admin.display(boolean=True, description='¿Tiene enlace?')
+    def tiene_enlace(self, obj):
+        return bool(obj.url_recurso)
 
 
 class RutaAprendizajeContenidoInline(admin.TabularInline):

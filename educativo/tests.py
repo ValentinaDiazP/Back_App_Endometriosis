@@ -37,7 +37,17 @@ class CatalogoEducativoTests(APITestCase):
             'resumen': 'Contenido premium con enfoque TCC.',
             'cuerpo': 'Contenido de ejemplo premium...',
             'minutos_estimados': 10,
+            'url_recurso': '',
         })
+
+    def test_contenido_y_ejercicio_devuelven_url_recurso(self):
+        from .models import ContenidoEducativo, EjercicioPsicoeducativo
+        ContenidoEducativo.objects.filter(id='c2').update(url_recurso='https://www.youtube.com/watch?v=abc123')
+        EjercicioPsicoeducativo.objects.filter(id='e3').update(url_recurso='https://open.spotify.com/episode/xyz')
+        contenido = self.client.get('/api/educativo/contenidos/c2/').json()
+        ejercicio = self.client.get('/api/educativo/ejercicios/e3/').json()
+        self.assertEqual(contenido['url_recurso'], 'https://www.youtube.com/watch?v=abc123')
+        self.assertEqual(ejercicio['url_recurso'], 'https://open.spotify.com/episode/xyz')
 
     def test_filtra_contenidos_por_categoria(self):
         respuesta = self.client.get('/api/educativo/contenidos/', {'categoria': 'cat_dolor'})
@@ -47,7 +57,8 @@ class CatalogoEducativoTests(APITestCase):
         respuesta = self.client.get('/api/educativo/ejercicios/')
         self.assertEqual(respuesta.status_code, 200)
         tipos = {e['id']: e['tipo'] for e in respuesta.json()}
-        self.assertEqual(tipos, {'e1': 'psicoeducacion', 'e2': 'tcc', 'e3': 'actMindfulness', 'e4': 'actMindfulness'})
+        self.assertEqual(tipos, {'e1': 'psicoeducacion', 'e2': 'tcc', 'e3': 'actMindfulness', 'e4': 'actMindfulness',
+                                 'e5': 'psicoeducacion', 'e6': 'psicoeducacion'})
 
     def test_rutas_devuelven_contenidos_en_orden(self):
         respuesta = self.client.get('/api/educativo/rutas/')
