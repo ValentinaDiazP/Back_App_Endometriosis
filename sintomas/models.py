@@ -59,3 +59,81 @@ class RegistroEmocional(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} - {self.fecha} - ánimo {self.estado_animo}"
+
+class ReglaPuntos(models.Model):
+    """Regla configurable desde /admin/: cuántos puntos da cada acción."""
+    clave = models.CharField(max_length=50, unique=True)
+    descripcion = models.CharField(max_length=150)
+    puntos = models.PositiveIntegerField()
+    activa = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.clave}: {self.puntos} pts"
+
+
+class NivelGamificacion(models.Model):
+    """Umbrales de nivel, también configurables desde /admin/."""
+    nombre = models.CharField(max_length=50)
+    puntos_minimos = models.PositiveIntegerField(unique=True)
+
+    class Meta:
+        ordering = ['puntos_minimos']
+
+    def __str__(self):
+        return f"{self.nombre} (desde {self.puntos_minimos} pts)"
+
+
+class Gamificacion(models.Model):
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='gamificacion',
+    )
+    puntos_totales = models.PositiveIntegerField(default=0)
+    racha_actual = models.PositiveIntegerField(default=0)
+    racha_maxima = models.PositiveIntegerField(default=0)
+    ultimo_dia_activo = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.usuario.username}: {self.puntos_totales} pts, racha {self.racha_actual}"
+
+
+class MovimientoPuntos(models.Model):
+    """Historial: una fila por cada vez que la usuaria ganó puntos."""
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='movimientos_puntos',
+    )
+    fecha = models.DateField()
+    clave = models.CharField(max_length=50)
+    motivo = models.CharField(max_length=150)
+    puntos = models.PositiveIntegerField()
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-creado_en']
+
+    def __str__(self):
+        return f"{self.usuario.username} +{self.puntos} ({self.motivo})"
+
+class RegistroCiclo(models.Model):
+    class Abundancia(models.TextChoices):
+        LEVE = 'leve', 'Leve'
+        MODERADA = 'moderada', 'Moderada'
+        ABUNDANTE = 'abundante', 'Abundante'
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='registros_ciclo',
+    )
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField(null=True, blank=True)
+    abundancia = models.CharField(max_length=10, choices=Abundancia.choices)
+
+    class Meta:
+        ordering = ['-fecha_inicio']
+
+    def __str__(self):
+        return f"{self.usuario.username}: {self.fecha_inicio} ({self.abundancia})"

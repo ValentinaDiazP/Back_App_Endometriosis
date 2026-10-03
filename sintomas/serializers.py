@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import LocalizacionDolor, RegistroEmocional, RegistroSintoma, SintomaAsociado
+from .models import LocalizacionDolor, RegistroCiclo, RegistroEmocional, RegistroSintoma, SintomaAsociado
 
 class LocalizacionDolorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -40,3 +40,18 @@ class RegistroEmocionalSerializer(serializers.ModelSerializer):
         model = RegistroEmocional
         fields = ['id', 'fecha', 'estado_animo', 'nota_libre', 'actualizado_en']
         read_only_fields = ['id', 'fecha', 'actualizado_en']
+
+class RegistroCicloSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegistroCiclo
+        fields = ['id', 'fecha_inicio', 'fecha_fin', 'abundancia']
+        read_only_fields = ['id']
+
+    def validate(self, datos):
+        inicio = datos.get('fecha_inicio', getattr(self.instance, 'fecha_inicio', None))
+        fin = datos.get('fecha_fin', getattr(self.instance, 'fecha_fin', None))
+        if inicio and fin and fin < inicio:
+            raise serializers.ValidationError(
+                'La fecha de fin no puede ser anterior a la de inicio.'
+            )
+        return datos
