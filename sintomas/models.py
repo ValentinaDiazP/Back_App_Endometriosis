@@ -34,3 +34,28 @@ class RegistroSintoma(models.Model):
 
     def __str__(self):
         return f"Registro de {self.usuario.username} - {self.fecha_hora}"
+
+
+class RegistroEmocional(models.Model):
+    """
+    Check-in emocional diario: un solo registro por usuaria y día (no por
+    hora), que se actualiza si ya existe en vez de duplicarse — la racha
+    de Gamificación necesita una pregunta binaria por día ("¿registró hoy?"),
+    no múltiples entradas sueltas.
+    """
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='registros_emocionales',
+    )
+    fecha = models.DateField(auto_now_add=True)
+    estado_animo = models.PositiveSmallIntegerField()  # Escala 1-5 (emojis)
+    nota_libre = models.TextField(null=True, blank=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['usuario', 'fecha']
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.fecha} - ánimo {self.estado_animo}"

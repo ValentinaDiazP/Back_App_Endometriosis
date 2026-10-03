@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
-from .models import LocalizacionDolor, RegistroSintoma, SintomaAsociado
-
+from .models import LocalizacionDolor, RegistroEmocional, RegistroSintoma, SintomaAsociado
 
 class LocalizacionDolorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,3 +34,9 @@ class RegistroSintomaSerializer(serializers.ModelSerializer):
             'sintomas_asociados', 'sintomas_asociados_detalle', 'observacion',
         ]
         read_only_fields = ['id', 'fecha_hora']
+
+class RegistroEmocionalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegistroEmocional
+        fields = ['id', 'fecha', 'estado_animo', 'nota_libre', 'actualizado_en']
+        read_only_fields = ['id', 'fecha', 'actualizado_en']
