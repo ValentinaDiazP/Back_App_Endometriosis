@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Moderación y Gestión - Florecer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+    <!-- Header -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🌸</span>
+                <h1 class="text-xl font-bold text-gray-800">Panel de Moderación y Gestión</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-600">Usuario: <strong class="text-gray-900">{{ request.user.username }}</strong></span>
+                <a href="/admin/" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-300 font-medium transition-colors">Django Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- SECCIÓN 1: Publicaciones Reportadas (Acordeón) -->
+        <details class="group bg-white shadow rounded-xl overflow-hidden border border-gray-200 open" open>
+            <summary class="p-6 bg-gray-50 hover:bg-gray-100 cursor-pointer flex justify-between items-center select-none transition-colors">
+                <div class="flex items-center space-x-3">
+                    <span class="text-lg">📢</span>
+                    <h2 class="text-lg font-semibold text-gray-800">Publicaciones Reportadas Pendientes</h2>
+                </div>
+                <span class="bg-pink-100 text-pink-800 text-xs font-bold px-3 py-1 rounded-full">
+                    {{ publicaciones_reportadas|length }} pendientes
+                </span>
+            </summary>
+            
+            <div class="p-6 border-t border-gray-200 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Autor(a)</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contenido</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Motivo</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for reporte in publicaciones_reportadas %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ reporte.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {% if reporte.publicacion.es_anonimo %}Anónima{% else %}{{ reporte.publicacion.usuario.username|default:"Desconocida" }}{% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-800 max-w-xs truncate" title="{{ reporte.publicacion.contenido }}">
+                                {{ reporte.publicacion.contenido }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-red-600 font-medium">{{ reporte.motivo }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    PENDIENTE
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                <form action="resolver/{{ reporte.id }}/" method="POST" class="inline-flex gap-2">
+                                    {% csrf_token %}
+                                    <button type="submit" name="accion" value="aprobar" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-colors">
+                                        Ocultar / Rechazar
+                                    </button>
+                                    <button type="submit" name="accion" value="descartar" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-colors">
+                                        Descartar Reporte
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-500 text-sm">
+                                🎉 No hay publicaciones reportadas pendientes en este momento.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+
+        <!-- SECCIÓN 2: Comentarios Reportados (Acordeón) -->
+        <details class="group bg-white shadow rounded-xl overflow-hidden border border-gray-200">
+            <summary class="p-6 bg-gray-50 hover:bg-gray-100 cursor-pointer flex justify-between items-center select-none transition-colors">
+                <div class="flex items-center space-x-3">
+                    <span class="text-lg">💬</span>
+                    <h2 class="text-lg font-semibold text-gray-800">Comentarios Reportados Pendientes</h2>
+                </div>
+                <span class="bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1 rounded-full">
+                    0 pendientes
+                </span>
+            </summary>
+            <div class="p-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+                No hay comentarios reportados actualmente.
+            </div>
+        </details>
+
+        <!-- SECCIÓN 3: Gestión de Profesionales (Acordeón) -->
+        <details class="group bg-white shadow rounded-xl overflow-hidden border border-gray-200 open" open>
+            <summary class="p-6 bg-gray-50 hover:bg-gray-100 cursor-pointer flex justify-between items-center select-none transition-colors">
+                <div class="flex items-center space-x-3">
+                    <span class="text-lg">👩‍⚕️</span>
+                    <h2 class="text-lg font-semibold text-gray-800">Directorio de Profesionales</h2>
+                </div>
+                <a href="/admin/bienestar/profesional/add/" onclick="event.stopPropagation();" class="bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors">
+                    ➕ Agregar Nuevo Profesional
+                </a>
+            </summary>
+            
+            <div class="p-6 border-t border-gray-200 overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Especialidad</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tarifa</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Disponibilidad</th>
+                            <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for prof in profesionales %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ prof.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800">{{ prof.name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ prof.specialty }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ prof.rate }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    {{ prof.availability }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                <a href="/admin/bienestar/profesional/{{ prof.id }}/change/" class="text-indigo-600 hover:text-indigo-900 font-semibold bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                                    Editar
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-500 text-sm">
+                                No hay profesionales registrados en la base de datos.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+
+    </main>
+</body>
+</html>

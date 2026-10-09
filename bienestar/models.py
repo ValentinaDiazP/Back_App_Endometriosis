@@ -9,6 +9,13 @@ class Professional(models.Model):
     specialty = models.CharField(max_length=150, verbose_name="Especialidad")
     rate = models.CharField(max_length=50, verbose_name="Tarifa")
     availability = models.CharField(max_length=100, verbose_name="Disponibilidad")
+    whatsapp = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        verbose_name="WhatsApp",
+        help_text="Número con código de país, sin espacios (ej: 573001112233)",
+    )
 
     class Meta:
         verbose_name = "Profesional"
@@ -28,11 +35,14 @@ class Publicacion(models.Model):
         ('RECHAZADO', 'Rechazado'),
     )
 
+    # Se guarda siempre la autora real para trazabilidad en el panel de administración,
+    # aunque es_anonimo oculte el nombre en la API pública.
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='publicaciones', null=True, blank=True, verbose_name="Autora")
     contenido = models.TextField(verbose_name="Contenido del texto")
     imagen = models.ImageField(upload_to='comunidad/', blank=True, null=True, verbose_name="Imagen adjunta")
     estado = models.CharField(max_length=20, choices=ESTADOS, default='APROBADO')
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de publicación")
+    es_anonimo = models.BooleanField(default=False, verbose_name="Publicación anónima")
 
     class Meta:
         verbose_name = "Publicación"
@@ -40,9 +50,7 @@ class Publicacion(models.Model):
         ordering = ['-fecha_creacion']
 
     def __str__(self):
-        nombre = self.usuario.username if self.usuario else "Anónima"
-        return f"Publicación de {nombre} - [{self.estado}] - {self.fecha_creacion.strftime('%Y-%m-%d %H:%M')}"
-
+        return f"Publicación de {self.usuario} - Anónimo: {self.es_anonimo}"
 
 class MeGusta(models.Model):
     publicacion = models.ForeignKey(Publicacion, on_delete=models.CASCADE, related_name='likes', verbose_name="Publicación")
@@ -88,3 +96,34 @@ class ReportePublicacion(models.Model):
 
     def __str__(self):
         return f"Reporte sobre post #{self.publicacion.id} por {self.usuario.username}"
+
+
+class SolicitudContacto(models.Model):
+    ESTADOS = (
+        ('PENDIENTE', 'Pendiente'),
+        ('ATENDIDA', 'Atendida'),
+        ('CANCELADA', 'Cancelada'),
+    )
+
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='solicitudes_contacto',
+        verbose_name="Usuaria",
+    )
+    profesional = models.ForeignKey(
+        Professional,
+        on_delete=models.CASCADE,
+        related_name='solicitudes_contacto',
+        verbose_name="Profesional",
+    )
+    fecha_solicitud = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de solicitud")
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='PENDIENTE', verbose_name="Estado")
+
+    class Meta:
+        verbose_name = "Solicitud de contacto"
+        verbose_name_plural = "Solicitudes de contacto"
+        ordering = ['-fecha_solicitud']
+
+    def __str__(self):
+        return f"Solicitud de {self.usuario} a {self.profesional} ({self.estado})"

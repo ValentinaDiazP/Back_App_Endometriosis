@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('moderacion/', include('bienestar.urls_moderacion')),
     path('api/bienestar/', include('bienestar.urls')),   # Tu módulo     # Compañera 3
     path('api/usuarios/', include('usuarios.urls')),
     # Comentados hasta que tus compañeras creen sus apps y archivos urls.py:
