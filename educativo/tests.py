@@ -58,7 +58,8 @@ class CatalogoEducativoTests(APITestCase):
         self.assertEqual(respuesta.status_code, 200)
         tipos = {e['id']: e['tipo'] for e in respuesta.json()}
         self.assertEqual(tipos, {'e1': 'psicoeducacion', 'e2': 'tcc', 'e3': 'actMindfulness', 'e4': 'actMindfulness',
-                                 'e5': 'psicoeducacion', 'e6': 'psicoeducacion'})
+                                 'e5': 'psicoeducacion', 'e6': 'psicoeducacion',
+                                 'e7': 'tcc', 'e8': 'actMindfulness'})
 
     def test_rutas_devuelven_contenidos_en_orden(self):
         respuesta = self.client.get('/api/educativo/rutas/')
