@@ -19,6 +19,15 @@ class PerfilUsuaria(models.Model):
     # la manda directo al menú principal o repite ese flujo una vez más.
     onboarding_completado = models.BooleanField(default=False)
 
+    class Plan(models.TextChoices):
+        GRATUITO = 'gratuito', 'Gratuito'
+        PREMIUM = 'premium', 'Premium'
+        HOSPITAL = 'hospital', 'Hospital (institucional)'
+
+    plan = models.CharField(
+        max_length=10, choices=Plan.choices, default=Plan.GRATUITO
+    )
+
     @property
     def edad(self):
         """Calculada a partir de fecha_nacimiento, nunca almacenada
@@ -28,6 +37,10 @@ class PerfilUsuaria(models.Model):
         if (hoy.month, hoy.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day):
             años -= 1
         return años
+
+    @property
+    def es_premium(self):
+        return self.plan in (self.Plan.PREMIUM, self.Plan.HOSPITAL)
 
     def __str__(self):
         return f"Perfil de {self.usuario.username}"

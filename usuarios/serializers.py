@@ -38,10 +38,12 @@ class PerfilSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='usuario.username', read_only=True)
     nombre = serializers.CharField(source='usuario.first_name', read_only=True)
     edad = serializers.ReadOnlyField()
+    es_premium = serializers.ReadOnlyField()
 
     class Meta:
         model = PerfilUsuaria
         fields = [
             'usuario_id', 'username', 'nombre', 'fecha_nacimiento', 'fecha_diagnostico',
             'diagnostico', 'edad', 'onboarding_completado',
+            'plan', 'es_premium',
         ]
