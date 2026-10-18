@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     ProfessionalViewSet,
+    CitaMedicaViewSet,
     PublicacionViewSet,
     ComentarioViewSet,
     SolicitudContactoViewSet,
@@ -9,6 +10,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r'professionals', ProfessionalViewSet, basename='professional')
+router.register(r'profesionales/citas', CitaMedicaViewSet, basename='profesionales-citas')
 router.register(r'publicaciones', PublicacionViewSet, basename='publicaciones')
 router.register(r'comentarios', ComentarioViewSet, basename='comentarios')
 router.register(r'solicitudes-contacto', SolicitudContactoViewSet, basename='solicitudes-contacto')

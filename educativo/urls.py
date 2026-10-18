@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     CategoriaContenidoViewSet,
+    ChatbotEducativoView,
     ContenidoEducativoViewSet,
     EjercicioPsicoeducativoViewSet,
     InteraccionContenidoViewSet,
@@ -23,4 +24,5 @@ router.register('registros-ejercicio', RegistroEjercicioViewSet, basename='regis
 
 urlpatterns = [
     path('preferencias/', PreferenciasView.as_view(), name='preferencias'),
+    path('chatbot/', ChatbotEducativoView.as_view(), name='chatbot-educativo'),
 ] + router.urls

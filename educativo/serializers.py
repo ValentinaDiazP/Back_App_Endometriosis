@@ -5,6 +5,7 @@ from .models import (
     ContenidoEducativo,
     EjercicioPsicoeducativo,
     InteraccionContenido,
+    PreguntaFrecuente,
     RegistroEjercicio,
     RutaAprendizaje,
 )
@@ -76,3 +77,11 @@ class RegistroEjercicioSerializer(serializers.ModelSerializer):
         model = RegistroEjercicio
         fields = ['id', 'ejercicio', 'fecha', 'respuestas', 'utilidad']
         read_only_fields = ['id', 'fecha']
+
+
+class PreguntaFrecuenteSerializer(serializers.ModelSerializer):
+    articulo_relacionado = ContenidoEducativoSerializer(read_only=True)
+
+    class Meta:
+        model = PreguntaFrecuente
+        fields = ['id', 'pregunta', 'respuesta', 'categoria', 'articulo_relacionado']

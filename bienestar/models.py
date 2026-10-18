@@ -25,6 +25,49 @@ class Professional(models.Model):
         return f"{self.name} - {self.specialty}"
 
 
+class DisponibilidadProfesional(models.Model):
+    profesional = models.ForeignKey(Professional, on_delete=models.CASCADE, related_name='horarios_disponibles', verbose_name="Profesional")
+    dia_semana = models.CharField(max_length=20, verbose_name="Día de la semana (ej: Lunes, Martes...)")
+    hora_inicio = models.TimeField(verbose_name="Hora de inicio")
+    hora_fin = models.TimeField(verbose_name="Hora de fin")
+
+    class Meta:
+        verbose_name = "Disponibilidad del Profesional"
+        verbose_name_plural = "Disponibilidades de Profesionales"
+
+    def __str__(self):
+        return f"{self.profesional.name} - {self.dia_semana} ({self.hora_inicio} a {self.hora_fin})"
+
+
+class CitaMedica(models.Model):
+    ESTADOS_CITA = (
+        ('PROGRAMADA', 'Programada (Azul)'),
+        ('CONFIRMADA', 'Confirmada (Verde)'),
+        ('COMPLETADA', 'Completada (Amarillo)'),
+        ('CANCELADA', 'Cancelada (Rojo)'),
+    )
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='citas_medicas', verbose_name="Usuaria")
+    especialista = models.ForeignKey(Professional, on_delete=models.SET_NULL, null=True, blank=True, related_name='citas', verbose_name="Especialista")
+    nombre_especialista = models.CharField(max_length=150, blank=True, default='', verbose_name="Nombre especialista externo")
+    especialidad = models.CharField(max_length=150, verbose_name="Especialidad")
+    fecha_hora = models.DateTimeField(verbose_name="Fecha y hora de la cita")
+    lugar_o_link = models.CharField(max_length=255, blank=True, default='', verbose_name="Lugar o Link de atención")
+    estado = models.CharField(max_length=30, choices=ESTADOS_CITA, default='PROGRAMADA', verbose_name="Estado de la cita")
+    notas = models.TextField(blank=True, default='', verbose_name="Notas adicionales")
+    puntos_otorgados = models.BooleanField(default=False, verbose_name="¿Puntos de gamificación otorgados?")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
+
+    class Meta:
+        verbose_name = "Cita Médica"
+        verbose_name_plural = "Citas Médicas"
+        ordering = ['fecha_hora']
+
+    def __str__(self):
+        esp = self.especialista.name if self.especialista else self.nombre_especialista
+        return f"Cita de {self.usuario.username} con {esp} el {self.fecha_hora} [{self.estado}]"
+
+
 # ==============================================================================
 # MÓDULO: COMUNIDAD (Feed, Moderación, Likes, Comentarios, Reportes)
 # ==============================================================================
@@ -35,12 +78,19 @@ class Publicacion(models.Model):
         ('RECHAZADO', 'Rechazado'),
     )
 
+    CATEGORIAS = (
+        ('DIAGNOSTICO_TRATAMIENTO', 'Diagnóstico y Tratamiento'),
+        ('ESTILO_VIDA', 'Alimentación y Estilo de Vida'),
+        ('HISTORIAS_APOYO', 'Historias y Apoyo Emocional'),
+    )
+
     # Se guarda siempre la autora real para trazabilidad en el panel de administración,
     # aunque es_anonimo oculte el nombre en la API pública.
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='publicaciones', null=True, blank=True, verbose_name="Autora")
     contenido = models.TextField(verbose_name="Contenido del texto")
     imagen = models.ImageField(upload_to='comunidad/', blank=True, null=True, verbose_name="Imagen adjunta")
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='APROBADO')
+    estado = models.CharField(max_length=30, choices=ESTADOS, default='APROBADO')
+    categoria = models.CharField(max_length=50, choices=CATEGORIAS, default='HISTORIAS_APOYO', verbose_name="Categoría de hilo")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de publicación")
     es_anonimo = models.BooleanField(default=False, verbose_name="Publicación anónima")
 

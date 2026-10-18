@@ -193,3 +193,30 @@ class RegistroEjercicio(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} - {self.ejercicio} ({self.fecha:%Y-%m-%d})"
+
+
+class PreguntaFrecuente(models.Model):
+    class Categoria(models.TextChoices):
+        MANEJO_DOLOR = 'Manejo del Dolor / Brotes', 'Manejo del Dolor / Brotes'
+        ESTILO_VIDA = 'Estilo de Vida y Nutrición', 'Estilo de Vida y Nutrición'
+        TRATAMIENTOS = 'Tratamientos y Medicación', 'Tratamientos y Medicación'
+        BIENESTAR_EMOCIONAL = 'Bienestar Emocional', 'Bienestar Emocional'
+
+    pregunta = models.CharField(max_length=300)
+    respuesta = models.TextField()
+    categoria = models.CharField(max_length=50, choices=Categoria.choices)
+    articulo_relacionado = models.ForeignKey(
+        ContenidoEducativo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='preguntas_frecuentes',
+    )
+
+    class Meta:
+        ordering = ['categoria', 'pregunta']
+        verbose_name = 'pregunta frecuente'
+        verbose_name_plural = 'preguntas frecuentes'
+
+    def __str__(self):
+        return self.pregunta

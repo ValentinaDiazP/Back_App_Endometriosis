@@ -5,6 +5,7 @@ from .models import (
     ContenidoEducativo,
     EjercicioPsicoeducativo,
     InteraccionContenido,
+    PreguntaFrecuente,
     PreferenciaUsuario,
     RegistroEjercicio,
     RutaAprendizaje,
@@ -66,3 +67,10 @@ class InteraccionContenidoAdmin(admin.ModelAdmin):
 class RegistroEjercicioAdmin(admin.ModelAdmin):
     list_display = ['usuario', 'ejercicio', 'fecha', 'utilidad']
     list_filter = ['ejercicio']
+
+
+@admin.register(PreguntaFrecuente)
+class PreguntaFrecuenteAdmin(admin.ModelAdmin):
+    list_display = ['pregunta', 'categoria', 'articulo_relacionado']
+    list_filter = ['categoria']
+    search_fields = ['pregunta', 'respuesta']

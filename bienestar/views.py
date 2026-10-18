@@ -12,10 +12,64 @@ from .serializers import (
 )
 
 
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from sintomas.gamificacion import registrar_actividad
+from .models import Publicacion, Comentario, Professional, DisponibilidadProfesional, CitaMedica, MeGusta, ReportePublicacion, SolicitudContacto
+from .serializers import (
+    PublicacionSerializer,
+    ComentarioSerializer,
+    ProfessionalSerializer,
+    DisponibilidadProfesionalSerializer,
+    CitaMedicaSerializer,
+    SolicitudContactoSerializer,
+)
+
+
 class ProfessionalViewSet(viewsets.ModelViewSet):
     queryset = Professional.objects.all()
     serializer_class = ProfessionalSerializer
     permission_classes = [permissions.AllowAny]
+
+    @action(detail=True, methods=['get'])
+    def disponibilidad(self, request, pk=None):
+        profesional = self.get_object()
+        horarios = profesional.horarios_disponibles.all()
+        serializer = DisponibilidadProfesionalSerializer(horarios, many=True)
+        return Response(serializer.data)
+
+
+class CitaMedicaViewSet(viewsets.ModelViewSet):
+    serializer_class = CitaMedicaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return CitaMedica.objects.filter(usuario=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user, estado='PROGRAMADA')
+
+    @action(detail=True, methods=['get'], url_path='reporte-salud')
+    def reporte_salud(self, request, pk=None):
+        cita = self.get_object()
+        # Estructura base preparada para el módulo de reportes y consulta médica
+        reporte_data = {
+            "cita_id": cita.id,
+            "paciente": cita.usuario.username,
+            "especialidad": cita.especialidad,
+            "especialista": cita.especialista.name if cita.especialista else cita.nombre_especialista,
+            "fecha_hora": cita.fecha_hora,
+            "estado": cita.estado,
+            "notas": cita.notas,
+            "resumen_salud": {
+                "sintomas_recientes": [],
+                "ultimos_registros_emocionales": [],
+                "recomendaciones_previas": []
+            }
+        }
+        return Response(reporte_data, status=status.HTTP_200_OK)
 
 
 class PublicacionViewSet(viewsets.ModelViewSet):
@@ -23,7 +77,11 @@ class PublicacionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Publicacion.objects.filter(estado='APROBADO').order_by('-fecha_creacion')
+        queryset = Publicacion.objects.filter(estado='APROBADO').order_by('-fecha_creacion')
+        categoria = self.request.query_params.get('categoria')
+        if categoria:
+            queryset = queryset.filter(categoria=categoria)
+        return queryset
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None

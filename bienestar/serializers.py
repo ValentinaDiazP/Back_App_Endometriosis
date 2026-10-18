@@ -1,11 +1,45 @@
 from rest_framework import serializers
-from .models import Professional, Publicacion, Comentario, SolicitudContacto
+from .models import Professional, DisponibilidadProfesional, CitaMedica, Publicacion, Comentario, SolicitudContacto
+from sintomas.gamificacion import registrar_actividad
+
+
+class DisponibilidadProfesionalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DisponibilidadProfesional
+        fields = ['id', 'dia_semana', 'hora_inicio', 'hora_fin']
 
 
 class ProfessionalSerializer(serializers.ModelSerializer):
+    horarios_disponibles = DisponibilidadProfesionalSerializer(many=True, read_only=True)
+
     class Meta:
         model = Professional
-        fields = '__all__'
+        fields = ['id', 'name', 'specialty', 'rate', 'availability', 'whatsapp', 'horarios_disponibles']
+
+
+class CitaMedicaSerializer(serializers.ModelSerializer):
+    especialista_nombre = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CitaMedica
+        fields = [
+            'id', 'usuario', 'especialista', 'especialista_nombre', 'nombre_especialista',
+            'especialidad', 'fecha_hora', 'lugar_o_link', 'estado', 'notas',
+            'puntos_otorgados', 'fecha_creacion'
+        ]
+        read_only_fields = ['usuario', 'puntos_otorgados', 'fecha_creacion']
+
+    def get_especialista_nombre(self, obj):
+        if obj.especialista:
+            return obj.especialista.name
+        return obj.nombre_especialista
+
+    def update(self, instance, validated_data):
+        nuevo_estado = validated_data.get('estado', instance.estado)
+        if nuevo_estado == 'COMPLETADA' and not instance.puntos_otorgados:
+            registrar_actividad(instance.usuario, 'cita_completada')
+            validated_data['puntos_otorgados'] = True
+        return super().update(instance, validated_data)
 
 
 class ComentarioSerializer(serializers.ModelSerializer):
@@ -33,7 +67,7 @@ class PublicacionSerializer(serializers.ModelSerializer):
         model = Publicacion
         fields = [
             'id', 'contenido', 'imagen', 'fecha_creacion',
-            'estado', 'es_anonimo', 'usuario_nombre',
+            'estado', 'es_anonimo', 'categoria', 'usuario_nombre',
             'total_likes', 'me_gusta', 'total_comentarios', 'comentarios',
         ]
         read_only_fields = ['estado']

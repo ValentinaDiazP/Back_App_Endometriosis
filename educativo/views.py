@@ -9,6 +9,7 @@ from .models import (
     ContenidoEducativo,
     EjercicioPsicoeducativo,
     InteraccionContenido,
+    PreguntaFrecuente,
     PreferenciaUsuario,
     RegistroEjercicio,
     RutaAprendizaje,
@@ -19,6 +20,7 @@ from .serializers import (
     ContenidoEducativoSerializer,
     EjercicioPsicoeducativoSerializer,
     InteraccionContenidoSerializer,
+    PreguntaFrecuenteSerializer,
     PreferenciasSerializer,
     RegistroEjercicioSerializer,
     RutaAprendizajeSerializer,
@@ -135,3 +137,76 @@ class RegistroEjercicioViewSet(
 
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
+
+
+class ChatbotEducativoView(APIView):
+    """
+    GET  -> Devuelve el listado de preguntas frecuentes disponibles para los chips/sugerencias.
+    POST -> Recibe {"pregunta": "..."} o {"query": "..."}, busca coincidencias por palabras clave
+            en la BD y devuelve la mejor respuesta, preguntas sugeridas y el artículo vinculado.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        preguntas = PreguntaFrecuente.objects.select_related('articulo_relacionado').all()
+        serializer = PreguntaFrecuenteSerializer(preguntas, many=True)
+        return Response({'preguntas_frecuentes': serializer.data})
+
+    def post(self, request):
+        query = request.data.get('pregunta') or request.data.get('query') or ''
+        query_lower = query.strip().lower()
+
+        todas = PreguntaFrecuente.objects.select_related('articulo_relacionado').all()
+        sugeridas_serializer = PreguntaFrecuenteSerializer(todas, many=True)
+
+        palabras_clave_general = ['tema', 'temas', 'opciones', 'ayuda', 'menu', 'menú', 'que tienes', 'qué tienes', 'categorias', 'categorías']
+        es_general = any(k in query_lower for k in palabras_clave_general)
+
+        if not query_lower or es_general:
+            respuesta_texto = (
+                'Los temas disponibles para mujeres diagnosticadas son:\n\n'
+                '1. Manejo del dolor y brotes\n'
+                '2. Nutrición antiinflamatoria\n'
+                '3. Fatiga crónica\n'
+                '4. Fisioterapia pélvica\n'
+                '5. Salud emocional'
+            )
+            return Response({
+                'respuesta': respuesta_texto,
+                'articulo_relacionado': None,
+                'preguntas_sugeridas': sugeridas_serializer.data,
+            })
+
+        # Búsqueda simple por coincidencia de palabras clave o subcadenas
+        match = None
+        palabras = [p for p in query_lower.split() if len(p) > 2]
+        
+        # 1. Búsqueda exacta o por subcadena en la pregunta
+        for item in todas:
+            if query_lower in item.pregunta.lower() or item.pregunta.lower() in query_lower:
+                match = item
+                break
+
+        # 2. Búsqueda por palabras clave si no hay coincidencia exacta de subcadena
+        if not match and palabras:
+            max_coincidentes = 0
+            for item in todas:
+                texto_completo = f"{item.pregunta} {item.respuesta}".lower()
+                coincidentes = sum(1 for p in palabras if p in texto_completo)
+                if coincidentes > max_coincidentes:
+                    max_coincidentes = coincidentes
+                    match = item
+
+        if match:
+            articulo_data = ContenidoEducativoSerializer(match.articulo_relacionado).data if match.articulo_relacionado else None
+            return Response({
+                'respuesta': match.respuesta,
+                'articulo_relacionado': articulo_data,
+                'preguntas_sugeridas': sugeridas_serializer.data,
+            })
+        else:
+            return Response({
+                'respuesta': 'No he encontrado una respuesta exacta en mi base de conocimiento sobre endometriosis para tu consulta. Te sugiero revisar las preguntas frecuentes o explorar nuestros módulos educativos y de fisioterapia pélvica.',
+                'articulo_relacionado': None,
+                'preguntas_sugeridas': sugeridas_serializer.data,
+            })
