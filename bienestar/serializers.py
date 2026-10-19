@@ -1,5 +1,9 @@
 from rest_framework import serializers
-from .models import Professional, DisponibilidadProfesional, CitaMedica, Publicacion, Comentario, SolicitudContacto
+from .models import (
+    Professional, DisponibilidadProfesional, CitaMedica, 
+    Publicacion, Comentario, SolicitudContacto, 
+    Producto, ItemCarrito, OrdenCompra
+)
 from sintomas.gamificacion import registrar_actividad
 
 
@@ -97,3 +101,26 @@ class SolicitudContactoSerializer(serializers.ModelSerializer):
         model = SolicitudContacto
         fields = ['id', 'usuario', 'profesional', 'fecha_solicitud', 'estado']
         read_only_fields = ['usuario', 'fecha_solicitud']
+
+
+class ProductoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Producto
+        fields = ['id', 'nombre', 'descripcion', 'precio', 'marca', 'categoria', 'imagen_url', 'disponible']
+
+
+class ItemCarritoSerializer(serializers.ModelSerializer):
+    producto_detalle = ProductoSerializer(source='producto', read_only=True)
+
+    class Meta:
+        model = ItemCarrito
+        fields = ['id', 'usuario', 'producto', 'producto_detalle', 'cantidad', 'agregado_en']
+        read_only_fields = ['usuario', 'agregado_en']
+
+
+class OrdenCompraSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrdenCompra
+        fields = ['id', 'usuario', 'total', 'completada', 'fecha_compra', 'items_snapshot']
+        read_only_fields = ['usuario', 'total', 'completada', 'fecha_compra', 'items_snapshot']
+

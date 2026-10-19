@@ -177,3 +177,61 @@ class SolicitudContacto(models.Model):
 
     def __str__(self):
         return f"Solicitud de {self.usuario} a {self.profesional} ({self.estado})"
+
+
+# ==============================================================================
+# MÓDULO: TIENDA VIRTUAL DE BIENESTAR
+# ==============================================================================
+class Producto(models.Model):
+    CATEGORIAS_TIENDA = (
+        ('COPAS_MENSTRUALES', 'Copas Menstruales'),
+        ('KITS', 'Kits'),
+        ('ALIVIO_DOLOR', 'Alivio del Dolor'),
+        ('YOGA_EJERCICIO', 'Yoga y Ejercicio'),
+        ('LIBROS_DIGITALES', 'Libros Digitales'),
+    )
+
+    nombre = models.CharField(max_length=200, verbose_name="Nombre del Producto")
+    descripcion = models.TextField(verbose_name="Descripción")
+    precio = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio")
+    marca = models.CharField(max_length=100, default='Vital', verbose_name="Marca Aliada")
+    categoria = models.CharField(max_length=50, choices=CATEGORIAS_TIENDA, verbose_name="Categoría")
+    imagen_url = models.URLField(max_length=500, verbose_name="URL de Imagen")
+    disponible = models.BooleanField(default=True, verbose_name="Disponible")
+
+    class Meta:
+        verbose_name = "Producto"
+        verbose_name_plural = "Productos"
+
+    def __str__(self):
+        return f"{self.nombre} - {self.marca} (${self.precio})"
+
+
+class ItemCarrito(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carrito_items', verbose_name="Usuaria")
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, verbose_name="Producto")
+    cantidad = models.PositiveIntegerField(default=1, verbose_name="Cantidad")
+    agregado_en = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de agregado")
+
+    class Meta:
+        verbose_name = "Item de Carrito"
+        verbose_name_plural = "Items de Carrito"
+
+    def __str__(self):
+        return f"{self.cantidad}x {self.producto.nombre} ({self.usuario.username})"
+
+
+class OrdenCompra(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ordenes_compra', verbose_name="Usuaria")
+    total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Total Pagado")
+    completada = models.BooleanField(default=True, verbose_name="Completada")
+    fecha_compra = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Compra")
+    items_snapshot = models.TextField(blank=True, default='', verbose_name="Resumen de Productos")
+
+    class Meta:
+        verbose_name = "Orden de Compra"
+        verbose_name_plural = "Órdenes de Compra"
+        ordering = ['-fecha_compra']
+
+    def __str__(self):
+        return f"Orden #{self.id} - {self.usuario.username} (${self.total})"

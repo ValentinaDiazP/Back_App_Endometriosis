@@ -141,16 +141,29 @@ class RegistroEjercicioViewSet(
 
 class ChatbotEducativoView(APIView):
     """
-    GET  -> Devuelve el listado de preguntas frecuentes disponibles para los chips/sugerencias.
-    POST -> Recibe {"pregunta": "..."} o {"query": "..."}, busca coincidencias por palabras clave
-            en la BD y devuelve la mejor respuesta, preguntas sugeridas y el artículo vinculado.
+    GET  -> Devuelve el listado de preguntas frecuentes agrupadas por categorías y organizadas para el chatbot.
+    POST -> Recibe {"pregunta": "..."} o {"query": "..."}, verifica el filtro estricto de contexto (Guardrail)
+            para endometriosis, salud femenina, dolor pélvico o calidad de vida. Si no cumple, responde con la
+            guía establecida limpia y sin emojis.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         preguntas = PreguntaFrecuente.objects.select_related('articulo_relacionado').all()
         serializer = PreguntaFrecuenteSerializer(preguntas, many=True)
-        return Response({'preguntas_frecuentes': serializer.data})
+        
+        # Categorías organizadas para el frontend
+        categorias = [
+            {"id": "sintomas", "nombre": "Síntomas y Dolor", "icono": "healing"},
+            {"id": "nutricion", "nombre": "Nutrición Antiinflamatoria", "icono": "restaurant"},
+            {"id": "tratamientos", "nombre": "Tratamientos y Citas", "icono": "medical_services"},
+            {"id": "bienestar", "nombre": "Calidad de Vida", "icono": "favorite"},
+        ]
+
+        return Response({
+            'categorias': categorias,
+            'preguntas_frecuentes': serializer.data
+        })
 
     def post(self, request):
         query = request.data.get('pregunta') or request.data.get('query') or ''
@@ -158,6 +171,26 @@ class ChatbotEducativoView(APIView):
 
         todas = PreguntaFrecuente.objects.select_related('articulo_relacionado').all()
         sugeridas_serializer = PreguntaFrecuenteSerializer(todas, many=True)
+
+        # Filtro estricto de contexto (Guardrail): Validar si pertenece a endometriosis, salud femenina, dolor pélvico o calidad de vida
+        keywords_validas = [
+            'endometriosis', 'dolor', 'pélvico', 'pelvico', 'salud', 'femenina', 'nutrición', 'nutricion',
+            'antiinflamatoria', 'tratamiento', 'citas', 'cita', 'calidad de vida', 'fatiga', 'sop',
+            'miomas', 'menopausia', 'ciclo', 'menstruación', 'menstruacion', 'síntomas', 'sintomas',
+            'ansiedad', 'fisioterapia', 'terapia', 'dieta', 'ejercicio', 'médico', 'medico', 'especialista'
+        ]
+
+        es_valida = any(kw in query_lower for kw in keywords_validas) or len(query_lower) < 3
+
+        if not es_valida:
+            respuesta_guardrail = (
+                'Como tu asistente en Endometriosis, solo puedo responder consultas sobre la enfermedad, manejo del dolor, nutrición y tu calidad de vida. ¿Te gustaría consultar sobre alguno de estos temas?'
+            )
+            return Response({
+                'respuesta': respuesta_guardrail,
+                'articulo_relacionado': None,
+                'preguntas_sugeridas': sugeridas_serializer.data,
+            })
 
         palabras_clave_general = ['tema', 'temas', 'opciones', 'ayuda', 'menu', 'menú', 'que tienes', 'qué tienes', 'categorias', 'categorías']
         es_general = any(k in query_lower for k in palabras_clave_general)
@@ -177,17 +210,14 @@ class ChatbotEducativoView(APIView):
                 'preguntas_sugeridas': sugeridas_serializer.data,
             })
 
-        # Búsqueda simple por coincidencia de palabras clave o subcadenas
         match = None
         palabras = [p for p in query_lower.split() if len(p) > 2]
         
-        # 1. Búsqueda exacta o por subcadena en la pregunta
         for item in todas:
             if query_lower in item.pregunta.lower() or item.pregunta.lower() in query_lower:
                 match = item
                 break
 
-        # 2. Búsqueda por palabras clave si no hay coincidencia exacta de subcadena
         if not match and palabras:
             max_coincidentes = 0
             for item in todas:
@@ -206,7 +236,7 @@ class ChatbotEducativoView(APIView):
             })
         else:
             return Response({
-                'respuesta': 'No he encontrado una respuesta exacta en mi base de conocimiento sobre endometriosis para tu consulta. Te sugiero revisar las preguntas frecuentes o explorar nuestros módulos educativos y de fisioterapia pélvica.',
+                'respuesta': 'Como tu asistente en Endometriosis, puedo ayudarte con consultas sobre manejo del dolor, nutrición antiinflamatoria, tratamientos y calidad de vida. Por favor, selecciona una de las preguntas frecuentes o especifica tu duda sobre estos temas.',
                 'articulo_relacionado': None,
                 'preguntas_sugeridas': sugeridas_serializer.data,
             })
