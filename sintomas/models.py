@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -17,6 +18,11 @@ class SintomaAsociado(models.Model):
 
 
 class RegistroSintoma(models.Model):
+    class AlivioMedicacion(models.TextChoices):
+        NADA = 'nada', 'Nada'
+        ALGO = 'algo', 'Algo'
+        MUCHO = 'mucho', 'Mucho'
+
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -28,6 +34,15 @@ class RegistroSintoma(models.Model):
     localizacion_otro_detalle = models.CharField(max_length=150, null=True, blank=True)
     sintomas_asociados = models.ManyToManyField(SintomaAsociado, blank=True, related_name='registros')
     observacion = models.TextField(null=True, blank=True)
+
+    # Otros tipos de dolor, en palabras de la usuaria (ej. "al orinar").
+    otros_tipos_dolor = models.CharField(max_length=300, null=True, blank=True)
+    # None = no respondió; True/False = respondió.
+    tomo_medicacion = models.BooleanField(null=True, blank=True)
+    medicacion_detalle = models.CharField(max_length=200, null=True, blank=True)
+    alivio_medicacion = models.CharField(
+        max_length=10, choices=AlivioMedicacion.choices, null=True, blank=True
+    )
 
     class Meta:
         ordering = ['-fecha_hora']
@@ -43,6 +58,13 @@ class RegistroEmocional(models.Model):
     de Gamificación necesita una pregunta binaria por día ("¿registró hoy?"),
     no múltiples entradas sueltas.
     """
+
+    class CapacidadDia(models.TextChoices):
+        TODO = 'todo', 'Todo'
+        CASI_TODO = 'casi_todo', 'Casi todo'
+        POCO = 'poco', 'Poco'
+        NO_PUDE = 'no_pude', 'No pude'
+
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -51,6 +73,24 @@ class RegistroEmocional(models.Model):
     fecha = models.DateField(auto_now_add=True)
     estado_animo = models.PositiveSmallIntegerField()  # Escala 1-5 (emojis)
     nota_libre = models.TextField(null=True, blank=True)
+
+    # Campos opcionales del check-in ampliado.
+    energia = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    horas_sueno = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MaxValueValidator(24)]
+    )
+    descanso = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    estres = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    capacidad_dia = models.CharField(
+        max_length=10, choices=CapacidadDia.choices, null=True, blank=True
+    )
+
     actualizado_en = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -59,6 +99,7 @@ class RegistroEmocional(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} - {self.fecha} - ánimo {self.estado_animo}"
+
 
 class ReglaPuntos(models.Model):
     """Regla configurable desde /admin/: cuántos puntos da cada acción."""
@@ -116,6 +157,7 @@ class MovimientoPuntos(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} +{self.puntos} ({self.motivo})"
+
 
 class RegistroCiclo(models.Model):
     class Abundancia(models.TextChoices):

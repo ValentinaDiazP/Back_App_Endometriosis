@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from .models import LocalizacionDolor, RegistroCiclo, RegistroEmocional, RegistroSintoma, SintomaAsociado
 
+
 class LocalizacionDolorSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocalizacionDolor
@@ -32,14 +33,27 @@ class RegistroSintomaSerializer(serializers.ModelSerializer):
             'id', 'fecha_hora', 'intensidad_dolor',
             'localizaciones', 'localizaciones_detalle', 'localizacion_otro_detalle',
             'sintomas_asociados', 'sintomas_asociados_detalle', 'observacion',
+            'otros_tipos_dolor', 'tomo_medicacion', 'medicacion_detalle', 'alivio_medicacion',
         ]
         read_only_fields = ['id', 'fecha_hora']
+
+    def validate(self, datos):
+        # Si dice que no tomó nada, no guardamos detalle ni alivio sueltos.
+        if datos.get('tomo_medicacion') is False:
+            datos['medicacion_detalle'] = None
+            datos['alivio_medicacion'] = None
+        return datos
+
 
 class RegistroEmocionalSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistroEmocional
-        fields = ['id', 'fecha', 'estado_animo', 'nota_libre', 'actualizado_en']
+        fields = [
+            'id', 'fecha', 'estado_animo', 'nota_libre', 'actualizado_en',
+            'energia', 'horas_sueno', 'descanso', 'estres', 'capacidad_dia',
+        ]
         read_only_fields = ['id', 'fecha', 'actualizado_en']
+
 
 class RegistroCicloSerializer(serializers.ModelSerializer):
     class Meta:
