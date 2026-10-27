@@ -78,6 +78,8 @@ class EjercicioPsicoeducativo(models.Model):
     minutos_estimados = models.PositiveSmallIntegerField()
     # Opcional: audio o video guiado externo (YouTube, Spotify, etc.).
     url_recurso = models.URLField(max_length=500, blank=True)
+    # Solo para usuarias con plan premium u hospital (ver educativo/acceso.py).
+    es_premium = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['id']
@@ -220,3 +222,124 @@ class PreguntaFrecuente(models.Model):
 
     def __str__(self):
         return self.pregunta
+
+
+# ---------------------------------------------------------------------------
+# Motor de aprendizaje (gamificación del módulo Educativo): puntos, niveles,
+# rachas de aprendizaje e insignias por ruta. Es independiente de la
+# gamificación de Seguimiento (sintomas.Gamificacion): aquí solo cuentan las
+# acciones educativas. Las reglas, niveles e insignias se editan desde el admin.
+# ---------------------------------------------------------------------------
+
+
+class ReglaAprendizaje(models.Model):
+    """Cuántos puntos da cada acción educativa. Editable desde /admin/."""
+    clave = models.CharField(max_length=50, unique=True)
+    descripcion = models.CharField(max_length=150)
+    puntos = models.PositiveIntegerField()
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['clave']
+        verbose_name = 'regla de puntos de aprendizaje'
+        verbose_name_plural = 'reglas de puntos de aprendizaje'
+
+    def __str__(self):
+        return f"{self.clave}: {self.puntos} pts"
+
+
+class NivelAprendizaje(models.Model):
+    """Umbrales de los niveles de progreso educativo. Editable desde /admin/."""
+    nombre = models.CharField(max_length=50)
+    puntos_minimos = models.PositiveIntegerField(unique=True)
+    emoji = models.CharField(max_length=8, blank=True)
+
+    class Meta:
+        ordering = ['puntos_minimos']
+        verbose_name = 'nivel de aprendizaje'
+        verbose_name_plural = 'niveles de aprendizaje'
+
+    def __str__(self):
+        return f"{self.nombre} (desde {self.puntos_minimos} pts)"
+
+
+class InsigniaRuta(models.Model):
+    """Insignia que se gana al completar todos los contenidos de una ruta."""
+    ruta = models.OneToOneField(RutaAprendizaje, on_delete=models.CASCADE, related_name='insignia')
+    nombre = models.CharField(max_length=100)
+    descripcion = models.CharField(max_length=200, blank=True)
+    emoji = models.CharField(max_length=8, blank=True)
+
+    class Meta:
+        ordering = ['ruta']
+        verbose_name = 'insignia de ruta'
+        verbose_name_plural = 'insignias de ruta'
+
+    def __str__(self):
+        return f"{self.nombre} ({self.ruta})"
+
+
+class ProgresoAprendizaje(models.Model):
+    """Totales de cada usuaria: puntos y racha de aprendizaje."""
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='progreso_aprendizaje',
+    )
+    puntos_totales = models.PositiveIntegerField(default=0)
+    racha_actual = models.PositiveIntegerField(default=0)
+    racha_maxima = models.PositiveIntegerField(default=0)
+    ultimo_dia_activo = models.DateField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'progreso de aprendizaje'
+        verbose_name_plural = 'progresos de aprendizaje'
+
+    def __str__(self):
+        return f"{self.usuario.username}: {self.puntos_totales} pts, racha {self.racha_actual}"
+
+
+class MovimientoAprendizaje(models.Model):
+    """Historial: una fila por cada vez que la usuaria ganó puntos."""
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='movimientos_aprendizaje',
+    )
+    fecha = models.DateField()
+    clave = models.CharField(max_length=50)
+    # Id del contenido, ejercicio o ruta que originó los puntos.
+    referencia = models.CharField(max_length=50, blank=True)
+    motivo = models.CharField(max_length=150)
+    puntos = models.PositiveIntegerField()
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-creado_en']
+        verbose_name = 'movimiento de puntos de aprendizaje'
+        verbose_name_plural = 'movimientos de puntos de aprendizaje'
+
+    def __str__(self):
+        return f"{self.usuario.username} +{self.puntos} ({self.motivo})"
+
+
+class InsigniaObtenida(models.Model):
+    """Una fila por usuaria e insignia ganada."""
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='insignias_obtenidas',
+    )
+    insignia = models.ForeignKey(InsigniaRuta, on_delete=models.CASCADE, related_name='obtenidas')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        constraints = [
+            models.UniqueConstraint(fields=['usuario', 'insignia'], name='insignia_obtenida_unica'),
+        ]
+        verbose_name = 'insignia obtenida'
+        verbose_name_plural = 'insignias obtenidas'
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.insignia.nombre}"

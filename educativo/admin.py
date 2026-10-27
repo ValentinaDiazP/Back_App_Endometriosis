@@ -4,10 +4,16 @@ from .models import (
     CategoriaContenido,
     ContenidoEducativo,
     EjercicioPsicoeducativo,
+    InsigniaObtenida,
+    InsigniaRuta,
     InteraccionContenido,
+    MovimientoAprendizaje,
+    NivelAprendizaje,
     PreguntaFrecuente,
     PreferenciaUsuario,
+    ProgresoAprendizaje,
     RegistroEjercicio,
+    ReglaAprendizaje,
     RutaAprendizaje,
     RutaAprendizajeContenido,
 )
@@ -31,8 +37,8 @@ class ContenidoEducativoAdmin(admin.ModelAdmin):
 
 @admin.register(EjercicioPsicoeducativo)
 class EjercicioPsicoeducativoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'nombre', 'tipo', 'minutos_estimados', 'tiene_enlace']
-    list_filter = ['tipo']
+    list_display = ['id', 'nombre', 'tipo', 'minutos_estimados', 'es_premium', 'tiene_enlace']
+    list_filter = ['tipo', 'es_premium']
 
     @admin.display(boolean=True, description='¿Tiene enlace?')
     def tiene_enlace(self, obj):
@@ -74,3 +80,39 @@ class PreguntaFrecuenteAdmin(admin.ModelAdmin):
     list_display = ['pregunta', 'categoria', 'articulo_relacionado']
     list_filter = ['categoria']
     search_fields = ['pregunta', 'respuesta']
+
+
+# --- Motor de aprendizaje -------------------------------------------------
+
+
+@admin.register(ReglaAprendizaje)
+class ReglaAprendizajeAdmin(admin.ModelAdmin):
+    list_display = ['clave', 'descripcion', 'puntos', 'activa']
+    list_editable = ['puntos', 'activa']
+
+
+@admin.register(NivelAprendizaje)
+class NivelAprendizajeAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'emoji', 'puntos_minimos']
+
+
+@admin.register(InsigniaRuta)
+class InsigniaRutaAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'emoji', 'ruta']
+
+
+@admin.register(ProgresoAprendizaje)
+class ProgresoAprendizajeAdmin(admin.ModelAdmin):
+    list_display = ['usuario', 'puntos_totales', 'racha_actual', 'racha_maxima', 'ultimo_dia_activo']
+
+
+@admin.register(MovimientoAprendizaje)
+class MovimientoAprendizajeAdmin(admin.ModelAdmin):
+    list_display = ['usuario', 'fecha', 'clave', 'referencia', 'puntos']
+    list_filter = ['clave']
+
+
+@admin.register(InsigniaObtenida)
+class InsigniaObtenidaAdmin(admin.ModelAdmin):
+    list_display = ['usuario', 'insignia', 'fecha']
+    list_filter = ['insignia']

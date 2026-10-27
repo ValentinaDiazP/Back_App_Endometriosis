@@ -4,6 +4,9 @@ from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .acceso import MENSAJE_PREMIUM, esta_bloqueado, premium_de_la_peticion
+from .aprendizaje import registrar_actividad_educativa, resumen_progreso
+from .recomendaciones import recomendaciones_para
 from .models import (
     CategoriaContenido,
     ContenidoEducativo,
@@ -110,15 +113,24 @@ class InteraccionContenidoViewSet(
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        contenido = serializer.validated_data['contenido']
+        if esta_bloqueado(contenido, premium_de_la_peticion(request)):
+            return Response({'detail': MENSAJE_PREMIUM}, status=status.HTTP_403_FORBIDDEN)
+        completado = serializer.validated_data.get('completado', True)
+        antes = InteraccionContenido.objects.filter(usuario=request.user, contenido=contenido).first()
+        ya_estaba_completado = bool(antes and antes.completado)
         interaccion, creada = InteraccionContenido.objects.update_or_create(
             usuario=request.user,
-            contenido=serializer.validated_data['contenido'],
-            defaults={'completado': serializer.validated_data.get('completado', True)},
+            contenido=contenido,
+            defaults={'completado': completado},
         )
-        return Response(
-            self.get_serializer(interaccion).data,
-            status=status.HTTP_201_CREATED if creada else status.HTTP_200_OK,
-        )
+        datos = dict(self.get_serializer(interaccion).data)
+        # Puntos, racha e insignias: solo la primera vez que queda completado.
+        if completado and not ya_estaba_completado:
+            datos['gamificacion'] = registrar_actividad_educativa(
+                request.user, 'contenido_leido', contenido.id
+            )
+        return Response(datos, status=status.HTTP_201_CREATED if creada else status.HTTP_200_OK)
 
 
 class RegistroEjercicioViewSet(
@@ -135,8 +147,40 @@ class RegistroEjercicioViewSet(
     def get_queryset(self):
         return RegistroEjercicio.objects.filter(usuario=self.request.user)
 
-    def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if esta_bloqueado(serializer.validated_data['ejercicio'], premium_de_la_peticion(request)):
+            return Response({'detail': MENSAJE_PREMIUM}, status=status.HTTP_403_FORBIDDEN)
+        registro = serializer.save(usuario=request.user)
+        datos = dict(self.get_serializer(registro).data)
+        datos['gamificacion'] = registrar_actividad_educativa(
+            request.user, 'ejercicio_completado', registro.ejercicio_id
+        )
+        return Response(datos, status=status.HTTP_201_CREATED)
+
+
+class ProgresoAprendizajeView(APIView):
+    """
+    GET /api/educativo/progreso/ -> puntos, nivel, racha, insignias por ruta
+    e historial reciente de la usuaria autenticada.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response(resumen_progreso(request.user))
+
+
+class RecomendacionesView(APIView):
+    """
+    GET /api/educativo/recomendaciones/ -> contenidos y ejercicios ordenados
+    para la usuaria, con el motivo de cada recomendación y las señales de
+    Seguimiento (dolor, ánimo y ciclo de los últimos 7 días) que se usaron.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response(recomendaciones_para(request.user, premium_de_la_peticion(request)))
 
 
 class ChatbotEducativoView(APIView):
@@ -150,7 +194,7 @@ class ChatbotEducativoView(APIView):
 
     def get(self, request):
         preguntas = PreguntaFrecuente.objects.select_related('articulo_relacionado').all()
-        serializer = PreguntaFrecuenteSerializer(preguntas, many=True)
+        serializer = PreguntaFrecuenteSerializer(preguntas, many=True, context={'request': request})
         
         # Categorías organizadas para el frontend
         categorias = [
@@ -170,7 +214,7 @@ class ChatbotEducativoView(APIView):
         query_lower = query.strip().lower()
 
         todas = PreguntaFrecuente.objects.select_related('articulo_relacionado').all()
-        sugeridas_serializer = PreguntaFrecuenteSerializer(todas, many=True)
+        sugeridas_serializer = PreguntaFrecuenteSerializer(todas, many=True, context={'request': request})
 
         # Filtro estricto de contexto (Guardrail): Validar si pertenece a endometriosis, salud femenina, dolor pélvico o calidad de vida
         keywords_validas = [
@@ -228,7 +272,9 @@ class ChatbotEducativoView(APIView):
                     match = item
 
         if match:
-            articulo_data = ContenidoEducativoSerializer(match.articulo_relacionado).data if match.articulo_relacionado else None
+            articulo_data = ContenidoEducativoSerializer(
+                match.articulo_relacionado, context={'request': request}
+            ).data if match.articulo_relacionado else None
             return Response({
                 'respuesta': match.respuesta,
                 'articulo_relacionado': articulo_data,
