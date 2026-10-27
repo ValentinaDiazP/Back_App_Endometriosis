@@ -8,6 +8,8 @@ from .views import (
     EjercicioPsicoeducativoViewSet,
     InteraccionContenidoViewSet,
     PreferenciasView,
+    ProgresoAprendizajeView,
+    RecomendacionesView,
     RegistroEjercicioViewSet,
     RutaAprendizajeViewSet,
 )
@@ -24,5 +26,7 @@ router.register('registros-ejercicio', RegistroEjercicioViewSet, basename='regis
 
 urlpatterns = [
     path('preferencias/', PreferenciasView.as_view(), name='preferencias'),
+    path('progreso/', ProgresoAprendizajeView.as_view(), name='progreso-aprendizaje'),
+    path('recomendaciones/', RecomendacionesView.as_view(), name='recomendaciones'),
     path('chatbot/', ChatbotEducativoView.as_view(), name='chatbot-educativo'),
 ] + router.urls

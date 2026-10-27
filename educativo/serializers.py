@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from .acceso import esta_bloqueado, premium_de_la_peticion
 from .models import (
     CategoriaContenido,
     ContenidoEducativo,
@@ -17,8 +18,30 @@ class CategoriaContenidoSerializer(serializers.ModelSerializer):
         fields = ['id', 'nombre', 'descripcion']
 
 
-class ContenidoEducativoSerializer(serializers.ModelSerializer):
+class _SegmentacionPremiumMixin:
+    """
+    Agrega `bloqueado` y, si el recurso es premium y la usuaria no, vacía los
+    campos con el contenido de verdad (`CAMPOS_PROTEGIDOS`). El título y el
+    resumen siguen visibles para que sepa que el recurso existe.
+
+    Sin `request` en el contexto se asume usuaria gratuita (lo seguro).
+    """
+    CAMPOS_PROTEGIDOS = ()
+
+    def to_representation(self, instance):
+        datos = super().to_representation(instance)
+        bloqueado = esta_bloqueado(instance, premium_de_la_peticion(self.context.get('request')))
+        datos['bloqueado'] = bloqueado
+        if bloqueado:
+            for campo in self.CAMPOS_PROTEGIDOS:
+                datos[campo] = ''
+        return datos
+
+
+class ContenidoEducativoSerializer(_SegmentacionPremiumMixin, serializers.ModelSerializer):
     # Se devuelve solo el id de la categoría (el `idCategoriaFK` del frontend).
+    CAMPOS_PROTEGIDOS = ('cuerpo', 'url_recurso')
+
     class Meta:
         model = ContenidoEducativo
         fields = [
@@ -27,10 +50,15 @@ class ContenidoEducativoSerializer(serializers.ModelSerializer):
         ]
 
 
-class EjercicioPsicoeducativoSerializer(serializers.ModelSerializer):
+class EjercicioPsicoeducativoSerializer(_SegmentacionPremiumMixin, serializers.ModelSerializer):
+    CAMPOS_PROTEGIDOS = ('instrucciones', 'url_recurso')
+
     class Meta:
         model = EjercicioPsicoeducativo
-        fields = ['id', 'nombre', 'tipo', 'descripcion', 'instrucciones', 'minutos_estimados', 'url_recurso']
+        fields = [
+            'id', 'nombre', 'tipo', 'descripcion', 'instrucciones', 'minutos_estimados',
+            'url_recurso', 'es_premium',
+        ]
 
 
 class RutaAprendizajeSerializer(serializers.ModelSerializer):
@@ -44,7 +72,9 @@ class RutaAprendizajeSerializer(serializers.ModelSerializer):
 
     def get_contenidos(self, ruta):
         pasos = ruta.pasos.all()  # ya viene ordenado por `orden`
-        return ContenidoEducativoSerializer([p.contenido for p in pasos], many=True).data
+        return ContenidoEducativoSerializer(
+            [p.contenido for p in pasos], many=True, context=self.context
+        ).data
 
 
 class PreferenciasSerializer(serializers.Serializer):
