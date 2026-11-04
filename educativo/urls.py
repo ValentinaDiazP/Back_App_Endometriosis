@@ -29,4 +29,5 @@ urlpatterns = [
     path('progreso/', ProgresoAprendizajeView.as_view(), name='progreso-aprendizaje'),
     path('recomendaciones/', RecomendacionesView.as_view(), name='recomendaciones'),
     path('chatbot/', ChatbotEducativoView.as_view(), name='chatbot-educativo'),
+    path('chat/pregunta/', ChatbotEducativoView.as_view(), name='chat-pregunta'),
 ] + router.urls
