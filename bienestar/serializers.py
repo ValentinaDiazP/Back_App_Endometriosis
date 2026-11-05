@@ -104,9 +104,29 @@ class SolicitudContactoSerializer(serializers.ModelSerializer):
 
 
 class ProductoSerializer(serializers.ModelSerializer):
+    imagen_final = serializers.SerializerMethodField()
+    productos_relacionados = serializers.SerializerMethodField()
+
     class Meta:
         model = Producto
-        fields = ['id', 'nombre', 'descripcion', 'precio', 'marca', 'categoria', 'imagen_url', 'disponible']
+        fields = [
+            'id', 'nombre', 'descripcion', 'composicion', 'precio', 'marca',
+            'categoria', 'imagen_url', 'imagen', 'imagen_final', 'rating',
+            'reviews_count', 'disponible', 'productos_relacionados'
+        ]
+
+    def get_imagen_final(self, obj):
+        if obj.imagen:
+            request = self.context.get('request')
+            url = request.build_absolute_uri(obj.imagen.url) if request else obj.imagen.url
+            return url.replace('http://127.0.0.1:8000', 'http://10.0.2.2:8000').replace('http://localhost:8000', 'http://10.0.2.2:8000')
+        if obj.imagen_url:
+            return obj.imagen_url.replace('http://127.0.0.1:8000', 'http://10.0.2.2:8000').replace('http://localhost:8000', 'http://10.0.2.2:8000')
+        return ''
+
+    def get_productos_relacionados(self, obj):
+        relacionados = Producto.objects.filter(categoria=obj.categoria).exclude(id=obj.id)[:6]
+        return ProductoSerializer(relacionados, many=True, context=self.context).data
 
 
 class ItemCarritoSerializer(serializers.ModelSerializer):

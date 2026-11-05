@@ -16,6 +16,12 @@ class Professional(models.Model):
         verbose_name="WhatsApp",
         help_text="Número con código de país, sin espacios (ej: 573001112233)",
     )
+    google_calendar_id = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        verbose_name="ID de Google Calendar"
+    )
 
     class Meta:
         verbose_name = "Profesional"
@@ -193,10 +199,14 @@ class Producto(models.Model):
 
     nombre = models.CharField(max_length=200, verbose_name="Nombre del Producto")
     descripcion = models.TextField(verbose_name="Descripción")
+    composicion = models.TextField(blank=True, default="Componentes naturales de grado médico y extractos botánicos.", verbose_name="Composición")
     precio = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio")
     marca = models.CharField(max_length=100, default='Vital', verbose_name="Marca Aliada")
     categoria = models.CharField(max_length=50, choices=CATEGORIAS_TIENDA, verbose_name="Categoría")
     imagen_url = models.URLField(max_length=500, verbose_name="URL de Imagen")
+    imagen = models.ImageField(upload_to='productos/', null=True, blank=True, verbose_name="Imagen")
+    rating = models.FloatField(default=4.8, verbose_name="Calificación")
+    reviews_count = models.IntegerField(default=16, verbose_name="Número de Reseñas")
     disponible = models.BooleanField(default=True, verbose_name="Disponible")
 
     class Meta:
@@ -216,6 +226,7 @@ class ItemCarrito(models.Model):
     class Meta:
         verbose_name = "Item de Carrito"
         verbose_name_plural = "Items de Carrito"
+        unique_together = ('usuario', 'producto')
 
     def __str__(self):
         return f"{self.cantidad}x {self.producto.nombre} ({self.usuario.username})"

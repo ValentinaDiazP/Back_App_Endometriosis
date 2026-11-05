@@ -1,0 +1,427 @@
+{
+  "version": 1,
+  "categorias": [
+    {
+      "id": "cat_autocuidado",
+      "nombre": "Autocuidado",
+      "descripcion": "Hábitos, alimentación y bienestar emocional diario."
+    },
+    {
+      "id": "cat_dolor",
+      "nombre": "Dolor crónico",
+      "descripcion": "Entender el dolor persistente y cómo manejarlo."
+    },
+    {
+      "id": "cat_endometriosis",
+      "nombre": "Endometriosis",
+      "descripcion": "Qué es, cómo se diagnostica y cómo evoluciona."
+    }
+  ],
+  "contenidos": [
+    {
+      "id": "c1",
+      "categoria_id": "cat_endometriosis",
+      "titulo": "¿Qué es la endometriosis?",
+      "tipo": "texto",
+      "nivel": "basico",
+      "es_premium": false,
+      "fecha_publicacion": "2026-01-10",
+      "resumen": "Una introducción clara a qué le pasa a tu cuerpo.",
+      "cuerpo": "La endometriosis es una condición en la que tejido similar al endometrio crece fuera del útero... (contenido de ejemplo)",
+      "minutos_estimados": 5,
+      "url_recurso": "https://www.youtube.com/watch?v=drez6fzeVzg",
+      "imagen": "",
+      "pie_de_imagen": ""
+    },
+    {
+      "id": "c2",
+      "categoria_id": "cat_dolor",
+      "titulo": "Entendiendo el dolor crónico",
+      "tipo": "video",
+      "nivel": "basico",
+      "es_premium": false,
+      "fecha_publicacion": "2026-01-12",
+      "resumen": "Por qué el dolor persiste incluso sin daño activo.",
+      "cuerpo": "Guion del video de ejemplo...",
+      "minutos_estimados": 8,
+      "url_recurso": "https://www.youtube.com/watch?v=5KrUL8tOaQs",
+      "imagen": "",
+      "pie_de_imagen": ""
+    },
+    {
+      "id": "c3",
+      "categoria_id": "cat_autocuidado",
+      "titulo": "Endometriosis: más allá del dolor físico",
+      "tipo": "video",
+      "nivel": "intermedio",
+      "es_premium": false,
+      "fecha_publicacion": "2026-01-15",
+      "resumen": "Cómo la endometriosis también afecta el ánimo y qué ayuda a sobrellevarlo.",
+      "cuerpo": "Guion del audio de ejemplo...",
+      "minutos_estimados": 6,
+      "url_recurso": "https://www.youtube.com/watch?v=zdH4U2PFBjg",
+      "imagen": "",
+      "pie_de_imagen": ""
+    },
+    {
+      "id": "c4",
+      "categoria_id": "cat_dolor",
+      "titulo": "Catastrofización del dolor: cómo identificarla",
+      "tipo": "texto",
+      "nivel": "avanzado",
+      "es_premium": true,
+      "fecha_publicacion": "2026-01-20",
+      "resumen": "Contenido premium con enfoque TCC.",
+      "cuerpo": "Contenido de ejemplo premium...",
+      "minutos_estimados": 10,
+      "url_recurso": "",
+      "imagen": "",
+      "pie_de_imagen": ""
+    }
+  ],
+  "ejercicios": [
+    {
+      "id": "e1",
+      "nombre": "¿Qué le pasa a mi cuerpo cuando duele?",
+      "tipo": "psicoeducacion",
+      "descripcion": "Módulo guiado para entender el ciclo del dolor.",
+      "instrucciones": "Lee cada tarjeta y marca la casilla al terminar. Tómate tu tiempo.",
+      "minutos_estimados": 7,
+      "url_recurso": "",
+      "es_premium": false,
+      "pasos": [
+        {
+          "orden": 1,
+          "titulo": "Tu dolor es real (prueba)",
+          "texto": "Cuando vives con endometriosis, el dolor no es \"exageración\" ni algo que esté solo en tu cabeza. Es una experiencia real, con causas físicas y también con otros factores que influyen.\r\n\r\nEn este módulo vas a entender, paso a paso, qué puede estar pasando en tu cuerpo cuando duele. Entenderlo no hace que el dolor desaparezca, pero puede darte más calma y más control.",
+          "punto_clave": "Tu dolor es real y merece ser tomado en serio."
+        },
+        {
+          "orden": 2,
+          "titulo": "Dolor agudo y dolor crónico",
+          "texto": "El dolor agudo es una alarma: aparece ante una lesión y se va cuando el cuerpo se recupera.\r\n\r\nEl dolor crónico es el que dura meses. Con el tiempo, la alarma puede seguir sonando aunque no haya un daño nuevo, y por eso a veces cuesta entenderlo.",
+          "punto_clave": "Un dolor que dura mucho tiempo funciona distinto a un dolor reciente."
+        },
+        {
+          "orden": 3,
+          "titulo": "Un sistema nervioso más sensible",
+          "texto": "Cuando el dolor se repite, el sistema nervioso puede volverse más sensible y reaccionar con más intensidad a estímulos que antes dolían menos. A esto se le llama sensibilización.\r\n\r\nNo es una falla tuya: es una forma en que el cuerpo se adapta al dolor sostenido.",
+          "punto_clave": "La sensibilidad aumentada es una adaptación del cuerpo, no una debilidad."
+        },
+        {
+          "orden": 4,
+          "titulo": "Lo que puede amplificar el dolor",
+          "texto": "El estrés, dormir poco, la preocupación constante y el miedo a que llegue el dolor pueden hacer que se sienta con más intensidad.\r\n\r\nEsto no significa que \"te lo causes tú\". Significa que el cuerpo y las emociones están conectados, y que hay cosas que sí puedes influir.",
+          "punto_clave": "Estrés, sueño y emociones influyen en cómo se siente el dolor."
+        },
+        {
+          "orden": 5,
+          "titulo": "Lo que sí puedes hacer",
+          "texto": "Registrar tus síntomas, cuidar tus descansos, moverte con suavidad cuando puedas y practicar ejercicios de calma son pequeñas acciones que suman.\r\n\r\nEn los siguientes ejercicios de la app aprenderás herramientas concretas. Y si el dolor te limita mucho, habla con tu profesional de salud.",
+          "punto_clave": "Pequeñas acciones constantes ayudan, y no tienes que hacerlo sola."
+        }
+      ],
+      "indicaciones": []
+    },
+    {
+      "id": "e2",
+      "nombre": "Reestructurando pensamientos catastróficos",
+      "tipo": "tcc",
+      "descripcion": "Identifica y transforma pensamientos como \"esto nunca va a mejorar\".",
+      "instrucciones": "Escribe un pensamiento difícil, luego una versión más balanceada.",
+      "minutos_estimados": 10,
+      "url_recurso": "",
+      "es_premium": false,
+      "pasos": [],
+      "indicaciones": []
+    },
+    {
+      "id": "e3",
+      "nombre": "Aceptar el dolor sin pelear contra él",
+      "tipo": "actMindfulness",
+      "descripcion": "Ejercicio de aceptación basado en ACT.",
+      "instrucciones": "Sigue el audio guiado de 5 minutos.",
+      "minutos_estimados": 5,
+      "url_recurso": "https://www.uclahealth.org/marc/mpeg/Spanish-workingwithdifficulties.mp3",
+      "es_premium": false,
+      "pasos": [],
+      "indicaciones": [
+        {
+          "orden": 1,
+          "texto": "Busca una postura cómoda. Si quieres, cierra los ojos."
+        },
+        {
+          "orden": 2,
+          "texto": "Respira con calma. No tienes que hacerlo de ninguna forma especial."
+        },
+        {
+          "orden": 3,
+          "texto": "Nota dónde sientes el dolor ahora mismo. No intentes cambiarlo: solo obsérvalo."
+        },
+        {
+          "orden": 4,
+          "texto": "Ponle nombre: \"estoy notando una sensación de…\" (presión, calor, punzada)."
+        },
+        {
+          "orden": 5,
+          "texto": "Imagina que le haces espacio, como si respiraras alrededor de esa sensación."
+        },
+        {
+          "orden": 6,
+          "texto": "Si aparecen pensamientos como \"no lo soporto\", déjalos pasar como nubes."
+        },
+        {
+          "orden": 7,
+          "texto": "Recuerda algo que te importa hoy, aunque el dolor esté presente."
+        },
+        {
+          "orden": 8,
+          "texto": "Vuelve a tu respiración. Cuando estés lista, abre los ojos despacio."
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "nombre": "Mindfulness para el dolor pélvico",
+      "tipo": "actMindfulness",
+      "descripcion": "Práctica breve de atención plena orientada al dolor.",
+      "instrucciones": "Busca un lugar tranquilo y sigue las instrucciones.",
+      "minutos_estimados": 8,
+      "url_recurso": "https://www.uclahealth.org/marc/mpeg/breathsoundbody-espanol.mp3",
+      "es_premium": false,
+      "pasos": [],
+      "indicaciones": [
+        {
+          "orden": 1,
+          "texto": "Siéntate o recuéstate en un lugar tranquilo. Apoya una mano en tu abdomen."
+        },
+        {
+          "orden": 2,
+          "texto": "Inhala por la nariz y siente cómo sube tu mano. Exhala despacio por la boca."
+        },
+        {
+          "orden": 3,
+          "texto": "Lleva la atención a tus pies y tus piernas. Nota si hay tensión y suéltala."
+        },
+        {
+          "orden": 4,
+          "texto": "Sube la atención a tus caderas y a la parte baja de la espalda."
+        },
+        {
+          "orden": 5,
+          "texto": "Ahora, a tu zona pélvica. Obsérvala con amabilidad, sin juzgar lo que sientes."
+        },
+        {
+          "orden": 6,
+          "texto": "Con cada exhalación, imagina que esa zona se ablanda un poco."
+        },
+        {
+          "orden": 7,
+          "texto": "Si tu mente se distrae, está bien. Vuelve con suavidad a la respiración."
+        },
+        {
+          "orden": 8,
+          "texto": "Nota tu cuerpo completo. Cuando quieras, mueve los dedos y abre los ojos."
+        }
+      ]
+    },
+    {
+      "id": "e5",
+      "nombre": "Dolor, estrés y ánimo: cómo se conectan",
+      "tipo": "psicoeducacion",
+      "descripcion": "Módulo guiado sobre la relación entre dolor y emociones.",
+      "instrucciones": "Avanza paso a paso y lee con calma.",
+      "minutos_estimados": 6,
+      "url_recurso": "",
+      "es_premium": false,
+      "pasos": [
+        {
+          "orden": 1,
+          "titulo": "El círculo del dolor y el estrés",
+          "texto": "Cuando duele, es normal sentir tensión y preocupación. Esa tensión puede aumentar la sensación de dolor, y más dolor genera más estrés. Así se forma un círculo.",
+          "punto_clave": "Dolor y estrés pueden alimentarse entre sí."
+        },
+        {
+          "orden": 2,
+          "titulo": "Cómo se siente en el ánimo",
+          "texto": "Vivir con dolor frecuente cansa. Es habitual sentir tristeza, irritabilidad o desánimo en algunos días.\n\nEstas emociones no son un fallo personal: son una respuesta comprensible a una situación difícil.",
+          "punto_clave": "Sentirte así es comprensible, no es un defecto tuyo."
+        },
+        {
+          "orden": 3,
+          "titulo": "Dónde puedes cortar el círculo",
+          "texto": "No se trata de eliminar el estrés por completo, sino de bajar un poco la intensidad: respirar con calma, hacer pausas, hablar con alguien de confianza.\n\nCada pausa pequeña le da al cuerpo una señal de seguridad.",
+          "punto_clave": "Pausas pequeñas también cuentan."
+        },
+        {
+          "orden": 4,
+          "titulo": "Cuándo pedir ayuda",
+          "texto": "Si notas que la tristeza o la ansiedad se vuelven constantes o te impiden hacer tu vida diaria, conviene hablarlo con un profesional de salud o de salud mental.\n\nPedir ayuda es una forma de cuidarte.",
+          "punto_clave": "Pedir ayuda es parte del autocuidado."
+        }
+      ],
+      "indicaciones": []
+    },
+    {
+      "id": "e6",
+      "nombre": "Ritmo y descanso: dosifica tu energía",
+      "tipo": "psicoeducacion",
+      "descripcion": "Módulo guiado para organizar tus días con dolor.",
+      "instrucciones": "Avanza paso a paso y lee con calma.",
+      "minutos_estimados": 5,
+      "url_recurso": "",
+      "es_premium": false,
+      "pasos": [
+        {
+          "orden": 1,
+          "titulo": "Por qué importa el ritmo",
+          "texto": "En los días buenos es tentador hacer todo de una vez. Pero pasarse puede traer un día de más dolor después. Y en los días malos, no hacer nada puede dejarte más rígida.",
+          "punto_clave": "Ni todo de golpe ni nada: busca un punto medio."
+        },
+        {
+          "orden": 2,
+          "titulo": "Dosificar tu energía",
+          "texto": "Dosificar significa dividir las actividades en partes pequeñas y alternar con descansos antes de sentirte agotada, no después.",
+          "punto_clave": "Descansar antes de agotarte ayuda a sostener el día."
+        },
+        {
+          "orden": 3,
+          "titulo": "Escucha tu cuerpo, sin juzgarte",
+          "texto": "Algunos días harás más y otros menos. Cambiar el plan no es fracasar: es adaptarte a cómo está tu cuerpo hoy.",
+          "punto_clave": "Adaptar el plan no es fracasar."
+        },
+        {
+          "orden": 4,
+          "titulo": "Tu primer paso",
+          "texto": "Elige una actividad de tu día y piensa cómo dividirla en dos o tres partes con una pausa en medio.\n\nPuedes usar el seguimiento de la app para notar qué días te cuestan más y ajustar tu ritmo.",
+          "punto_clave": "Empieza con una sola actividad y una pausa."
+        }
+      ],
+      "indicaciones": []
+    },
+    {
+      "id": "e7",
+      "nombre": "Manejo de la catastrofización",
+      "tipo": "tcc",
+      "descripcion": "Pon en perspectiva el \"peor escenario\" cuando el dolor te asusta.",
+      "instrucciones": "Describe el miedo, imagina el peor, el mejor y el más probable escenario, y arma un plan para afrontarlo.",
+      "minutos_estimados": 8,
+      "url_recurso": "",
+      "es_premium": true,
+      "pasos": [],
+      "indicaciones": []
+    },
+    {
+      "id": "e8",
+      "nombre": "Mis valores personales",
+      "tipo": "actMindfulness",
+      "descripcion": "Reconoce qué es importante para ti y da un paso pequeño hacia ello, aunque haya dolor.",
+      "instrucciones": "Elige hasta tres valores, califica su importancia y define una acción pequeña para esta semana.",
+      "minutos_estimados": 7,
+      "url_recurso": "",
+      "es_premium": true,
+      "pasos": [],
+      "indicaciones": []
+    }
+  ],
+  "rutas": [
+    {
+      "id": "r1",
+      "nombre": "Primeros pasos con la endometriosis",
+      "descripcion": "Ruta introductoria para usuarias recién diagnosticadas.",
+      "contenidos": [
+        "c1",
+        "c2",
+        "c3"
+      ]
+    },
+    {
+      "id": "r2",
+      "nombre": "Manejo del dolor con enfoque TCC",
+      "descripcion": "Ruta intermedia centrada en pensamientos y dolor.",
+      "contenidos": [
+        "c2",
+        "c4"
+      ]
+    }
+  ],
+  "reglas": [
+    {
+      "clave": "contenido_leido",
+      "descripcion": "Leíste un contenido",
+      "puntos": 10,
+      "activa": true
+    },
+    {
+      "clave": "ejercicio_completado",
+      "descripcion": "Completaste un ejercicio",
+      "puntos": 15,
+      "activa": true
+    },
+    {
+      "clave": "racha_aprendizaje_3",
+      "descripcion": "Racha de aprendizaje de 3 días",
+      "puntos": 10,
+      "activa": true
+    },
+    {
+      "clave": "racha_aprendizaje_30",
+      "descripcion": "Racha de aprendizaje de 30 días",
+      "puntos": 100,
+      "activa": true
+    },
+    {
+      "clave": "racha_aprendizaje_7",
+      "descripcion": "Racha de aprendizaje de 7 días",
+      "puntos": 25,
+      "activa": true
+    },
+    {
+      "clave": "ruta_completada",
+      "descripcion": "Completaste una ruta de aprendizaje",
+      "puntos": 50,
+      "activa": true
+    }
+  ],
+  "niveles": [
+    {
+      "nombre": "Exploradora",
+      "puntos_minimos": 0,
+      "emoji": "🧭"
+    },
+    {
+      "nombre": "Aprendiz",
+      "puntos_minimos": 50,
+      "emoji": "📖"
+    },
+    {
+      "nombre": "Conocedora",
+      "puntos_minimos": 150,
+      "emoji": "💡"
+    },
+    {
+      "nombre": "Experta",
+      "puntos_minimos": 350,
+      "emoji": "🎓"
+    },
+    {
+      "nombre": "Guía",
+      "puntos_minimos": 600,
+      "emoji": "🌟"
+    }
+  ],
+  "insignias": [
+    {
+      "ruta_id": "r1",
+      "nombre": "Primeros pasos",
+      "descripcion": "Completaste la ruta de primeros pasos con la endometriosis.",
+      "emoji": "🌱"
+    },
+    {
+      "ruta_id": "r2",
+      "nombre": "Mente y dolor",
+      "descripcion": "Completaste la ruta de manejo del dolor con enfoque TCC.",
+      "emoji": "🧠"
+    }
+  ]
+}

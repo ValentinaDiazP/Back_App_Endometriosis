@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Professional, Publicacion, Comentario, MeGusta, ReportePublicacion, SolicitudContacto
+from .models import Professional, Publicacion, Comentario, MeGusta, ReportePublicacion, SolicitudContacto, Producto
 
 
 @admin.action(description='Aprobar publicaciones')
@@ -71,3 +71,11 @@ class ComentarioAdmin(admin.ModelAdmin):
 @admin.register(MeGusta)
 class MeGustaAdmin(admin.ModelAdmin):
     list_display = ('id', 'publicacion', 'usuario', 'fecha')
+
+
+@admin.register(Producto)
+class ProductoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre', 'marca', 'categoria', 'precio', 'disponible', 'rating')
+    list_filter = ('categoria', 'disponible', 'marca')
+    search_fields = ('nombre', 'descripcion', 'marca')
+

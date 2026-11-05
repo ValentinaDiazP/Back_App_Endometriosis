@@ -12,14 +12,14 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'professionals', ProfessionalViewSet, basename='professional')
-router.register(r'profesionales/citas', CitaMedicaViewSet, basename='profesionales-citas')
+router.register(r'profesionales', ProfessionalViewSet, basename='professional')
+router.register(r'citas', CitaMedicaViewSet, basename='citas')
 router.register(r'publicaciones', PublicacionViewSet, basename='publicaciones')
 router.register(r'comentarios', ComentarioViewSet, basename='comentarios')
 router.register(r'solicitudes-contacto', SolicitudContactoViewSet, basename='solicitudes-contacto')
-router.register(r'bienestar/productos', ProductoViewSet, basename='bienestar-productos')
-router.register(r'bienestar/carrito', CarritoViewSet, basename='bienestar-carrito')
-router.register(r'bienestar/compras', ComprarViewSet, basename='bienestar-compras')
+router.register(r'productos', ProductoViewSet, basename='productos')
+router.register(r'carrito', CarritoViewSet, basename='carrito')
+router.register(r'compras', ComprarViewSet, basename='compras')
 
 urlpatterns = [
     path('', include(router.urls)),
