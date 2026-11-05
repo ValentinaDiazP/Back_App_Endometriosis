@@ -49,6 +49,8 @@ class CatalogoEducativoTests(APITestCase):
             'cuerpo': '',
             'minutos_estimados': 10,
             'url_recurso': '',
+            'imagen': '',
+            'pie_de_imagen': '',
             'bloqueado': True,
         })
 
@@ -518,3 +520,123 @@ class RecomendacionesTests(APITestCase):
         otra = get_user_model().objects.create_user(username='bea', password='secreta123')
         RegistroSintoma.objects.create(usuario=otra, intensidad_dolor=9)
         self.assertFalse(self._recomendaciones()['senales']['hay_datos'])
+
+
+
+# ---------------------------------------------------------------------------
+# Gestor de contenidos: lo que antes vivía en el código del frontend (pasos
+# de los módulos guiados e indicaciones de las prácticas) ahora se edita desde
+# el admin. Las migraciones 0014 y 0015 cargan el contenido inicial.
+# ---------------------------------------------------------------------------
+
+
+class GestorContenidosTests(APITestCase):
+    def setUp(self):
+        usuaria = get_user_model().objects.create_user(username='ana', password='secreta123')
+        token = Token.objects.create(user=usuaria)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+    def _ejercicio(self, id_):
+        return self.client.get(f'/api/educativo/ejercicios/{id_}/').json()
+
+    def test_modulo_guiado_viene_del_backend(self):
+        e1 = self._ejercicio('e1')
+        self.assertEqual(len(e1['pasos']), 5)
+        self.assertEqual(e1['pasos'][0]['titulo'], 'Tu dolor es real')
+        self.assertEqual(len(e1['pasos'][0]['parrafos']), 2)
+        self.assertTrue(e1['pasos'][0]['punto_clave'])
+        self.assertEqual(e1['indicaciones'], [])
+
+    def test_practica_guiada_viene_del_backend(self):
+        e3 = self._ejercicio('e3')
+        self.assertEqual(len(e3['indicaciones']), 8)
+        self.assertEqual(e3['pasos'], [])
+
+    def test_editar_un_paso_en_la_base_de_datos_cambia_lo_que_ve_la_app(self):
+        from .models import PasoModuloGuiado
+        PasoModuloGuiado.objects.filter(ejercicio_id='e5', orden=1).update(titulo='Título editado en el admin')
+        self.assertEqual(self._ejercicio('e5')['pasos'][0]['titulo'], 'Título editado en el admin')
+
+    def test_parrafos_se_separan_por_linea_en_blanco(self):
+        from .models import PasoModuloGuiado
+        paso = PasoModuloGuiado.objects.get(ejercicio_id='e6', orden=1)
+        paso.texto = 'Primero.\n\nSegundo **importante**.\n\n\nTercero.'
+        paso.save()
+        self.assertEqual(
+            self._ejercicio('e6')['pasos'][0]['parrafos'],
+            ['Primero.', 'Segundo **importante**.', 'Tercero.'],
+        )
+
+    def test_los_pasos_se_ordenan_por_el_campo_orden(self):
+        from .models import PasoModuloGuiado
+        PasoModuloGuiado.objects.create(ejercicio_id='e6', orden=0, titulo='Va primero', texto='Hola.')
+        self.assertEqual(self._ejercicio('e6')['pasos'][0]['titulo'], 'Va primero')
+
+    def test_contenido_devuelve_imagen_y_pie(self):
+        from .models import ContenidoEducativo
+        ContenidoEducativo.objects.filter(id='c1').update(imagen='educativo/ejemplo.png', pie_de_imagen='Un ejemplo')
+        datos = self.client.get('/api/educativo/contenidos/c1/').json()
+        self.assertTrue(datos['imagen'].endswith('/media/educativo/ejemplo.png'))
+        self.assertEqual(datos['pie_de_imagen'], 'Un ejemplo')
+
+    def test_contenido_sin_imagen(self):
+        datos = self.client.get('/api/educativo/contenidos/c1/').json()
+        self.assertIsNone(datos['imagen'])
+        self.assertEqual(datos['pie_de_imagen'], '')
+
+    def test_ejercicio_premium_bloqueado_no_manda_pasos(self):
+        from .models import IndicacionPractica
+        IndicacionPractica.objects.create(ejercicio_id='e8', orden=1, texto='Respira.')
+        datos = self._ejercicio('e8')
+        self.assertTrue(datos['bloqueado'])
+        self.assertEqual(datos['indicaciones'], [])
+
+
+# ---------------------------------------------------------------------------
+# Contenido del gestor compartido por git (exportar / importar)
+# ---------------------------------------------------------------------------
+
+from django.test import TestCase  # noqa: E402
+
+from .contenido_compartido import exportar, importar  # noqa: E402
+
+
+class ContenidoCompartidoTests(TestCase):
+    def test_exportar_e_importar_restaura_el_catalogo(self):
+        from .models import ContenidoEducativo, EjercicioPsicoeducativo, PasoModuloGuiado
+        datos = exportar()
+        self.assertEqual(len(datos['contenidos']), 4)
+        e1 = [e for e in datos['ejercicios'] if e['id'] == 'e1'][0]
+        self.assertEqual(len(e1['pasos']), 5)
+
+        # Cambios locales que el archivo debe deshacer.
+        ContenidoEducativo.objects.filter(id='c1').update(titulo='Cambiado a mano')
+        PasoModuloGuiado.objects.filter(ejercicio_id='e1').delete()
+        EjercicioPsicoeducativo.objects.filter(id='e1').update(nombre='Otro nombre')
+
+        resumen = importar(datos)
+        self.assertEqual(resumen['contenidos'], 4)
+        self.assertEqual(ContenidoEducativo.objects.get(id='c1').titulo, '¿Qué es la endometriosis?')
+        self.assertEqual(PasoModuloGuiado.objects.filter(ejercicio_id='e1').count(), 5)
+        self.assertEqual(exportar(), datos)  # el resultado es idéntico al archivo
+
+    def test_importar_crea_contenido_nuevo(self):
+        from .models import ContenidoEducativo
+        datos = exportar()
+        nuevo = dict(datos['contenidos'][0], id='c99', titulo='Contenido nuevo del gestor')
+        datos['contenidos'].append(nuevo)
+        importar(datos)
+        self.assertEqual(ContenidoEducativo.objects.get(id='c99').titulo, 'Contenido nuevo del gestor')
+
+    def test_importar_no_toca_datos_de_usuarias(self):
+        from .models import InteraccionContenido
+        usuaria = get_user_model().objects.create_user(username='ana', password='secreta123')
+        InteraccionContenido.objects.create(usuario=usuaria, contenido_id='c1')
+        importar(exportar())
+        self.assertTrue(InteraccionContenido.objects.filter(usuario=usuaria, contenido_id='c1').exists())
+
+    def test_rechaza_version_desconocida(self):
+        datos = exportar()
+        datos['version'] = 99
+        with self.assertRaises(ValueError):
+            importar(datos)

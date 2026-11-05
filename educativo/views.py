@@ -54,7 +54,7 @@ class ContenidoEducativoViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class EjercicioPsicoeducativoViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = EjercicioPsicoeducativo.objects.all()
+    queryset = EjercicioPsicoeducativo.objects.prefetch_related('pasos_modulo', 'indicaciones')
     serializer_class = EjercicioPsicoeducativoSerializer
     permission_classes = [permissions.IsAuthenticated]
 
