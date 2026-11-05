@@ -12,6 +12,15 @@ from django.db import models
 # convertirlos directamente con `Enum.values.byName(...)`.
 
 
+# Texto de ayuda para quien edita desde el admin. La app interpreta este
+# formato sencillo (ver TextoEnriquecido en el frontend).
+TEXTO_ENRIQUECIDO_AYUDA = (
+    'Formato: deja una línea en blanco entre párrafos. '
+    '**texto** = negrita, __texto__ = subrayado, [texto](https://enlace) = enlace, '
+    'líneas que empiezan con "- " = lista, "## " = subtítulo.'
+)
+
+
 class CategoriaContenido(models.Model):
     id = models.CharField(max_length=50, primary_key=True)
     nombre = models.CharField(max_length=100)
@@ -49,11 +58,14 @@ class ContenidoEducativo(models.Model):
     es_premium = models.BooleanField(default=False)
     fecha_publicacion = models.DateField()
     resumen = models.CharField(max_length=300)
-    cuerpo = models.TextField()
+    cuerpo = models.TextField(help_text=TEXTO_ENRIQUECIDO_AYUDA)
     minutos_estimados = models.PositiveSmallIntegerField()
     # Opcional: enlace al video o podcast (YouTube, Spotify, etc.). La app
     # muestra un botón para abrirlo fuera de Florecer.
     url_recurso = models.URLField(max_length=500, blank=True)
+    # Opcional: imagen del contenido con su pie de foto.
+    imagen = models.ImageField(upload_to='educativo/', blank=True, null=True, verbose_name='imagen')
+    pie_de_imagen = models.CharField(max_length=200, blank=True, verbose_name='pie de imagen')
 
     class Meta:
         ordering = ['fecha_publicacion', 'id']
@@ -88,6 +100,49 @@ class EjercicioPsicoeducativo(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class PasoModuloGuiado(models.Model):
+    """Un paso (pantalla) del módulo guiado de un ejercicio de psicoeducación."""
+    ejercicio = models.ForeignKey(
+        EjercicioPsicoeducativo,
+        on_delete=models.CASCADE,
+        related_name='pasos_modulo',
+    )
+    orden = models.PositiveSmallIntegerField(default=1, help_text='Posición del paso (1, 2, 3…).')
+    titulo = models.CharField(max_length=200)
+    texto = models.TextField(help_text=TEXTO_ENRIQUECIDO_AYUDA)
+    punto_clave = models.CharField(
+        max_length=300, blank=True,
+        help_text='Idea clave resaltada al final del paso (opcional).',
+    )
+
+    class Meta:
+        ordering = ['ejercicio', 'orden', 'id']
+        verbose_name = 'paso de módulo guiado'
+        verbose_name_plural = 'pasos de módulo guiado'
+
+    def __str__(self):
+        return f"{self.ejercicio_id} · paso {self.orden}: {self.titulo}"
+
+
+class IndicacionPractica(models.Model):
+    """Una indicación de una práctica guiada (ACT / Mindfulness) con temporizador."""
+    ejercicio = models.ForeignKey(
+        EjercicioPsicoeducativo,
+        on_delete=models.CASCADE,
+        related_name='indicaciones',
+    )
+    orden = models.PositiveSmallIntegerField(default=1, help_text='Posición de la indicación (1, 2, 3…).')
+    texto = models.CharField(max_length=300)
+
+    class Meta:
+        ordering = ['ejercicio', 'orden', 'id']
+        verbose_name = 'indicación de práctica guiada'
+        verbose_name_plural = 'indicaciones de práctica guiada'
+
+    def __str__(self):
+        return f"{self.ejercicio_id} · {self.orden}: {self.texto[:40]}"
 
 
 class RutaAprendizaje(models.Model):
