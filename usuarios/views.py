@@ -65,3 +65,14 @@ class CompletarOnboardingView(APIView):
         perfil.onboarding_completado = True
         perfil.save()
         return Response({'onboarding_completado': True})
+
+class ActivarPremiumView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        perfil = PerfilUsuaria.objects.get(usuario=request.user)
+        if perfil.plan == 'gratuito':
+            perfil.plan = 'premium'
+            perfil.save(update_fields=['plan'])
+        return Response({'plan': perfil.plan})    
+    

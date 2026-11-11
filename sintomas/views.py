@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from django.db.models import Q
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -106,7 +107,14 @@ class RegistroCicloViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return RegistroCiclo.objects.filter(usuario=self.request.user)
+        qs = RegistroCiclo.objects.filter(usuario=self.request.user)
+        desde = self.request.query_params.get('desde')
+        hasta = self.request.query_params.get('hasta')
+        if desde:
+            qs = qs.filter(Q(fecha_fin__gte=desde) | Q(fecha_fin__isnull=True))
+        if hasta:
+            qs = qs.filter(fecha_inicio__lte=hasta)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
