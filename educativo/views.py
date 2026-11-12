@@ -53,6 +53,47 @@ class RagError(Exception):
     pass
 
 
+FRASE_RECHAZO = (
+    "Esa consulta está fuera de lo que puedo orientar aquí. Soy el asistente de Florecer para "
+    "endometriosis y para cómo te afecta física y emocionalmente. Si es algo de salud, "
+    "consúltalo con tu equipo médico."
+)
+
+SYSTEM_PROMPT_RAG = (
+    "Eres el asistente educativo de Florecer, una app para mujeres con endometriosis. "
+    "Acompañas con calidez y claridad.\n\n"
+    "ALCANCE (decídelo tú según el sentido de la pregunta, no por palabras clave):\n"
+    "- SÍ respondes: endometriosis (causas, síntomas, dolor, fatiga, tratamientos, cirugía, "
+    "nutrición, ejercicio, autogestión, citas médicas, uso de la app) y todo lo que viva con ella: "
+    "ánimo, ansiedad, tristeza, estrés, estigma, relaciones, sueño, sexualidad y fertilidad en relación "
+    "con la endometriosis, y salud mental en ese contexto. Preguntas personales o emocionales de "
+    "una mujer que convive con endometriosis también entran.\n"
+    "- NO respondes: otras enfermedades o condiciones que no sean endometriosis (por ejemplo diabetes, "
+    "cáncer, gripe), ni temas ajenos a la salud (geografía, tareas, programación, etc.). En esos casos "
+    "responde SOLO con esta frase exacta y nada más: "
+    f"'{FRASE_RECHAZO}'\n"
+    "- Si una condición asociada (p. ej. depresión, ansiedad, SOP) aparece en relación con la "
+    "endometriosis, respóndela solo en esa relación.\n\n"
+    "CÓMO RESPONDER:\n"
+    "1. Usa <knowledge_base> como fuente de hechos. Cada bloque empieza con '### ' y puede terminar con una "
+    "línea 'FUENTE: ...'.\n"
+    "2. Si hay un bloque que responde la pregunta, apóyate en él y termina con la línea FUENTE de ESE bloque, "
+    "copiada tal cual, precedida de 'Fuente: '. Nunca cites una fuente que no esté en el bloque que usaste, "
+    "ni de tu conocimiento previo, ni el título del documento.\n"
+    "3. Si ningún bloque cubre la pregunta pero está dentro del alcance (p. ej. una duda personal o emocional), "
+    "responde con orientación general breve, empática y prudente, SIN citar fuentes y SIN afirmar datos "
+    "médicos concretos; cierra con: 'Para más detalle, consúltalo con tu equipo médico.'\n"
+    "4. Si la cobertura es parcial, responde solo lo que el bloque sustenta y cierra con la misma frase. "
+    "Nunca mezcles una respuesta con la frase de rechazo.\n"
+    "5. Texto plano, sin Markdown ni asteriscos ni listas con símbolos. Máximo 130 palabras. Español, tono "
+    "cálido, sin juzgar.\n"
+    "6. Prohibido diagnosticar, interpretar exámenes o imágenes, y recetar o dosificar medicamentos. "
+    "Explicar cómo funciona un tipo de tratamiento sí está permitido.\n"
+    "7. Si la usuaria expresa mucho malestar emocional, valida lo que siente y sugiere buscar apoyo "
+    "profesional (la sección Profesionales de la app)."
+)
+
+
 def generar_respuesta_rag(pregunta: str) -> str:
     """
     Carga knowledge_base.md completo y consulta a Gemini 2.5 Flash con thinking_budget=0.
@@ -77,24 +118,13 @@ def generar_respuesta_rag(pregunta: str) -> str:
 
     client = genai.Client(api_key=gemini_api_key)
     
-    system_instruction = (
-        "Eres un asistente virtual educativo especializado EXCLUSIVAMENTE en endometriosis. "
-        "Responde ÚNICAMENTE usando la información de <knowledge_base>.\n"
-        "Reglas obligatorias:\n"
-        "- Responde en texto plano, sin Markdown ni asteriscos.\n"
-        "- Máximo 130 palabras.\n"
-        "- Tono empático, cálido y pedagógico.\n"
-        "- Termina siempre con la fuente científica exacta que aparece en el documento (ej.: 'Fuente: Guía ESHRE, 2022').\n"
-        "- Prohibido diagnosticar, interpretar exámenes/ecografías, o recetar/dosificar fármacos.\n"
-        "- Si la pregunta no tiene ninguna relación con el documento, responde exactamente: "
-        "'No dispongo de esa información específica en mi base educacional. Te sugiero consultarlo directamente con tu equipo médico.'"
-    )
+    system_instruction = SYSTEM_PROMPT_RAG
 
-    prompt = f"<knowledge_base>\n{kb_content}\n</knowledge_base>\n\nPregunta: {pregunta}"
+    prompt = f"<knowledge_base>\n{kb_content}\n</knowledge_base>\n\nPregunta de la usuaria: {pregunta}"
 
     try:
         response = client.models.generate_content(
-            model="gemini-3.5-flash",
+            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -113,6 +143,73 @@ def generar_respuesta_rag(pregunta: str) -> str:
         raise RagError(f"Gemini devolvió una respuesta vacía. Finish reason: {finish_reason}")
 
     return texto_respuesta
+
+
+# -----------------------------------------------------------------------------
+# Respaldo sin IA: si Gemini no está disponible (falta GEMINI_API_KEY, sin red,
+# cuota agotada...), se responde con el bloque de knowledge_base.md que más se
+# parece a la pregunta, en vez de devolver un error a la usuaria.
+# -----------------------------------------------------------------------------
+MENSAJE_SIN_COINCIDENCIA = (
+    "En este momento no puedo darte una respuesta personalizada a esa pregunta. "
+    "Puedes explorar los temas del menú o escribir tu duda con otras palabras. "
+    "Para más detalle, consúltalo con tu equipo médico."
+)
+
+_PALABRAS_VACIAS = {
+    "como", "cómo", "para", "porque", "por", "que", "qué", "cual", "cuál", "cuando", "cuándo",
+    "donde", "dónde", "tengo", "tiene", "tener", "esta", "este", "estoy", "puedo", "puede",
+    "hacer", "mucho", "mucha", "muy", "mas", "más", "sobre", "entre", "desde", "hasta", "algo",
+    "cosas", "siento", "sentir", "endometriosis", "asociada", "asociado", "durante", "debo",
+}
+
+
+def _raiz(palabra: str) -> str:
+    """Raíz muy simple (primeras 5 letras) para que 'crónico' y 'crónica' coincidan."""
+    return palabra[:5]
+
+
+def _palabras_clave(texto: str) -> set:
+    import re
+    limpio = _normalizar_texto(texto)
+    vacias = {_normalizar_texto(p) for p in _PALABRAS_VACIAS}
+    return {_raiz(p) for p in re.findall(r"[a-zñ]+", limpio) if len(p) >= 4 and p not in vacias}
+
+
+def _cargar_bloques_kb() -> list:
+    kb_path = Path(__file__).resolve().parent / "knowledge_base.md"
+    bloques, actual = [], None
+    for linea in kb_path.read_text(encoding="utf-8").splitlines():
+        if linea.startswith("### "):
+            titulo = linea[4:].split("|", 1)[-1].strip()
+            actual = {"titulo": titulo, "cuerpo": [], "fuente": None}
+            bloques.append(actual)
+        elif actual is not None:
+            if linea.startswith("FUENTE:"):
+                actual["fuente"] = linea[len("FUENTE:"):].strip()
+            elif linea.startswith("## "):
+                actual = None
+            elif linea.strip():
+                actual["cuerpo"].append(linea.strip())
+    return bloques
+
+
+def respuesta_local_kb(pregunta: str) -> str:
+    """Devuelve el bloque de la base de conocimiento más parecido a la pregunta."""
+    claves = _palabras_clave(pregunta)
+    mejor, mejor_puntaje = None, 0
+    for bloque in _cargar_bloques_kb():
+        en_titulo = len(claves & _palabras_clave(bloque["titulo"]))
+        en_cuerpo = len(claves & _palabras_clave(" ".join(bloque["cuerpo"])))
+        puntaje = en_titulo * 3 + en_cuerpo
+        if puntaje > mejor_puntaje:
+            mejor, mejor_puntaje = bloque, puntaje
+    if not mejor or mejor_puntaje < 2:
+        return MENSAJE_SIN_COINCIDENCIA
+    texto = " ".join(mejor["cuerpo"])
+    if mejor["fuente"]:
+        return f"{texto}\n\nFuente: {mejor['fuente']}"
+    return f"{texto}\n\nPara más detalle, consúltalo con tu equipo médico."
 
 
 class CategoriaContenidoViewSet(viewsets.ReadOnlyModelViewSet):
@@ -234,6 +331,53 @@ class RecomendacionesView(APIView):
         return Response(recomendaciones_para(request.user, premium_de_la_peticion(request)))
 
 
+def _normalizar_texto(texto: str) -> str:
+    """Minúsculas y sin tildes, para comparar frases."""
+    import unicodedata
+    texto = unicodedata.normalize("NFD", texto.lower())
+    return "".join(c for c in texto if unicodedata.category(c) != "Mn")
+
+
+# Frases (ya sin tildes) que indican riesgo emocional o autolesión.
+FRASES_CRISIS_EMOCIONAL = [
+    "suicid", "quitarme la vida", "quitarse la vida", "acabar con mi vida", "terminar con mi vida",
+    "no quiero vivir", "ya no quiero vivir", "no quiero seguir viviendo", "quiero morir",
+    "quiero morirme", "me quiero morir", "quisiera morir", "quisiera no despertar",
+    "mejor muerta", "matarme", "autolesion","hacerme dano", "lastimarme",
+    "cortarme las venas", "cortarme", "no vale la pena vivir", "no aguanto mas vivir",
+]
+
+# Frases (ya sin tildes) que indican urgencia física aguda.
+FRASES_URGENCIA_FISICA = [
+    "sangrado abundante", "sangrado muy abundante", "hemorragia", "me desangro", "desmay",
+    "perdi el conocimiento", "fiebre alta", "no puedo respirar", "dificultad para respirar",
+    "me falta el aire", "dolor insoportable", "dolor extremo", "dolor muy fuerte y no cede",
+]
+
+TEMAS_PRINCIPALES = [
+    "1. Fisiopatología, síntomas y mecanismos del dolor",
+    "2. Salud mental y afrontamiento psicoemocional",
+    "3. Explicación de tratamientos médicos y quirúrgicos",
+    "4. Nutrición, estilo de vida y terapias complementarias",
+    "5. Autogestión del síntoma y comunicación médica",
+]
+
+MENSAJE_CRISIS_EMOCIONAL = (
+    "Siento mucho que estés pasando por esto. Lo que sientes importa y no tienes que cargarlo sola.\n\n"
+    "Si estás pensando en hacerte daño o en quitarte la vida, por favor habla ahora con alguien:\n"
+    "• Línea 106 (salud mental, gratuita, 24 horas en Colombia)\n"
+    "• Si estás en peligro inmediato, llama al 123 o ve a urgencias.\n\n"
+    "Si puedes, avisa a una persona de confianza que esté contigo."
+)
+
+MENSAJE_URGENCIA_FISICA = (
+    "⚠️ Lo que describes puede necesitar atención médica urgente.\n\n"
+    "Acude ahora a urgencias o llama al 123 (línea de emergencias en Colombia), "
+    "sobre todo si hay sangrado abundante, desmayo, fiebre alta, dificultad para respirar "
+    "o un dolor que no cede. No esperes a que pase."
+)
+
+
 class ChatbotEducativoView(APIView):
     """
     GET  -> Devuelve las categorías y preguntas frecuentes iniciales.
@@ -269,25 +413,17 @@ class ChatbotEducativoView(APIView):
         # ---------------------------------------------------------------------
         # (1) FILTRO DE CRISIS
         # ---------------------------------------------------------------------
-        keywords_crisis = ['suicidio', 'matar', 'morir', 'autolesión', 'autolesion', 'sangrado abundante', 'hemorragia aguda', 'fiebre alta', 'daño', 'vivir', 'respirar', 'insoportable']
-        if any(c in query_lower for c in keywords_crisis):
-            respuesta_crisis = (
-                "⚠️ ATENCIÓN MÉDICA INMEDIATA:\n"
-                "Si estás experimentando dolor extremo incapacitante, hemorragia aguda o pensamientos de autolesión, "
-                "por favor acude inmediatamente a urgencias y comunícate con las líneas locales de emergencia:\n"
-                "• Línea 106 / Línea 192 (Colombia)\n"
-                "• O acude al centro médico más cercano de inmediato."
-            )
+        query_norm = _normalizar_texto(query)
+        mensaje_crisis = None
+        if any(f in query_norm for f in FRASES_CRISIS_EMOCIONAL):
+            mensaje_crisis = MENSAJE_CRISIS_EMOCIONAL
+        elif any(f in query_norm for f in FRASES_URGENCIA_FISICA):
+            mensaje_crisis = MENSAJE_URGENCIA_FISICA
+        if mensaje_crisis:
             return Response({
-                'respuesta': respuesta_crisis,
+                'respuesta': mensaje_crisis,
                 'articulo_relacionado': None,
-                'opciones_sugeridas': [
-                    "1. Fisiopatología, síntomas y mecanismos del dolor",
-                    "2. Salud mental y afrontamiento psicoemocional",
-                    "3. Explicación de tratamientos médicos y quirúrgicos",
-                    "4. Nutrición, estilo de vida y terapias complementarias",
-                    "5. Autogestión del síntoma y comunicación médica"
-                ],
+                'opciones_sugeridas': ["Volver al menú principal"],
                 'preguntas_sugeridas': sugeridas_serializer.data,
             })
 
@@ -318,13 +454,7 @@ class ChatbotEducativoView(APIView):
                 'preguntas_sugeridas': sugeridas_serializer.data,
             })
 
-        temas_principales = [
-            "1. Fisiopatología, síntomas y mecanismos del dolor",
-            "2. Salud mental y afrontamiento psicoemocional",
-            "3. Explicación de tratamientos médicos y quirúrgicos",
-            "4. Nutrición, estilo de vida y terapias complementarias",
-            "5. Autogestión del síntoma y comunicación médica"
-        ]
+        temas_principales = TEMAS_PRINCIPALES
 
         preguntas_por_tema = {
             "1": [
@@ -382,65 +512,31 @@ class ChatbotEducativoView(APIView):
         # ---------------------------------------------------------------------
         # (3) CARRUSEL INFERIOR (3 PREGUNTAS RÁPIDAS)
         # ---------------------------------------------------------------------
-        carrusel_p1 = "¿cómo gestionar la ansiedad o el impacto emocional del diagnóstico?"
-        carrusel_p2 = "¿cómo puedo manejar la fatiga crónica asociada a la endometriosis?"
-        carrusel_p3 = "¿qué puedo hacer durante un brote (flare-up) de dolor agudo?"
-
-        if query_lower == carrusel_p1 or query_lower == carrusel_p2:
-            art = ContenidoEducativo.objects.filter(titulo__icontains="más allá del dolor físico").first() or \
-                  ContenidoEducativo.objects.filter(titulo__icontains="más allá del dolor").first() or \
-                  ContenidoEducativo.objects.first()
-            art_data = ContenidoEducativoSerializer(art, context={'request': request}).data if art else None
-            
-            if query_lower == carrusel_p1:
-                resp_carrusel = (
-                    "El impacto emocional del diagnóstico de endometriosis es profundo y real. La incertidumbre y el dolor "
-                    "generan estrés y ansiedad sostenida. Practicar la aceptación sin lucha y contar con apoyo psicológico "
-                    "ayuda a sobrellevarlo de forma saludable.\n\nFuente: del Pino-Sedeño et al., 2024; Donatti et al., 2022."
-                )
-            else:
-                resp_carrusel = (
-                    "La fatiga crónica en la endometriosis es un síntoma sistémico derivado de la inflamación crónica, la alteración "
-                    "del sueño y el desgaste físico constante. Requiere pacing (distribución equilibrada de energía), descanso consciente y apoyo integral.\n\nFuente: ESHRE Guideline, 2022; OMS."
-                )
-
-            return Response({
-                'respuesta': resp_carrusel,
-                'articulo_relacionado': art_data,
-                'opciones_sugeridas': ["Volver al menú principal"],
-                'preguntas_sugeridas': sugeridas_serializer.data,
-            })
-
-        if query_lower == carrusel_p3:
-            art = ContenidoEducativo.objects.filter(titulo__icontains="entendiendo el dolor crónico").first() or \
-                  ContenidoEducativo.objects.filter(titulo__icontains="dolor crónico").first() or \
-                  ContenidoEducativo.objects.first()
-            art_data = ContenidoEducativoSerializer(art, context={'request': request}).data if art else None
-            return Response({
-                'respuesta': (
-                    "Durante un brote (flare-up) agudo, aplica calor local moderado, descansa en una postura cómoda, "
-                    "realiza respiración diafragmática lenta para calmar el sistema nervioso y utiliza tus analgésicos o pautas médicas indicadas. "
-                    "Acude a urgencias si el dolor es insoportable o inusual.\n\nFuente: ACOG Practice Bulletin, 2010; ESHRE, 2022."
-                ),
-                'articulo_relacionado': art_data,
-                'opciones_sugeridas': ["Volver al menú principal"],
-                'preguntas_sugeridas': sugeridas_serializer.data,
-            })
+        carrusel_articulos = {
+            "¿cómo gestionar la ansiedad o el impacto emocional del diagnóstico?": "más allá del dolor",
+            "¿cómo puedo manejar la fatiga crónica asociada a la endometriosis?": "más allá del dolor",
+            "¿qué puedo hacer durante un brote (flare-up) de dolor agudo?": "dolor crónico",
+        }
+        articulo_carrusel = None
+        if query_lower in carrusel_articulos:
+            art = ContenidoEducativo.objects.filter(
+                titulo__icontains=carrusel_articulos[query_lower]
+            ).first()
+            if art:
+                articulo_carrusel = ContenidoEducativoSerializer(art, context={'request': request}).data
 
         # ---------------------------------------------------------------------
         # (4) CONSULTAS RAG (25 SUBPREGUNTAS O TEXTO LIBRE)
         # ---------------------------------------------------------------------
         try:
             respuesta_rag = generar_respuesta_rag(query)
-        except (ImproperlyConfigured, RagError):
-            return Response(
-                {"detail": "Error interno en el servicio de chatbot educativo."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+        except (ImproperlyConfigured, RagError) as e:
+            logger.warning("Chatbot sin IA, se usa respaldo de knowledge_base.md: %s", e)
+            respuesta_rag = respuesta_local_kb(query)
 
         return Response({
             'respuesta': respuesta_rag,
-            'articulo_relacionado': None,
+            'articulo_relacionado': articulo_carrusel,
             'opciones_sugeridas': ["Volver al menú principal"],
             'preguntas_sugeridas': sugeridas_serializer.data,
         })
