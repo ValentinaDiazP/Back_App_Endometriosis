@@ -11,6 +11,7 @@ class RegistroSerializer(serializers.Serializer):
     fecha_nacimiento = serializers.DateField()
     diagnostico = serializers.CharField(max_length=100, required=False, allow_blank=True)
     fecha_diagnostico = serializers.DateField(required=False, allow_null=True)
+    celular = serializers.CharField(max_length=15, required=False, allow_blank=True, allow_null=True)
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
@@ -28,6 +29,7 @@ class RegistroSerializer(serializers.Serializer):
             fecha_nacimiento=validated_data['fecha_nacimiento'],
             fecha_diagnostico=validated_data.get('fecha_diagnostico'),
             diagnostico=validated_data.get('diagnostico') or None,
+            celular=validated_data.get('celular') or None,
         )
         return user
 
@@ -37,6 +39,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     usuario_id = serializers.IntegerField(source='usuario.id', read_only=True)
     username = serializers.CharField(source='usuario.username', read_only=True)
     nombre = serializers.CharField(source='usuario.first_name', read_only=True)
+    celular = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     edad = serializers.ReadOnlyField()
     es_premium = serializers.ReadOnlyField()
 
@@ -44,6 +47,6 @@ class PerfilSerializer(serializers.ModelSerializer):
         model = PerfilUsuaria
         fields = [
             'usuario_id', 'username', 'nombre', 'fecha_nacimiento', 'fecha_diagnostico',
-            'diagnostico', 'edad', 'onboarding_completado',
+            'diagnostico', 'celular', 'edad', 'onboarding_completado',
             'plan', 'es_premium',
         ]

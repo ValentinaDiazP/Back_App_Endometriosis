@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Professional, DisponibilidadProfesional, CitaMedica, 
-    Publicacion, Comentario, SolicitudContacto, 
+    Publicacion, Comentario, MeGustaComentario, SolicitudContacto, 
     Producto, ItemCarrito, OrdenCompra
 )
 from sintomas.gamificacion import registrar_actividad
@@ -18,7 +18,7 @@ class ProfessionalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Professional
-        fields = ['id', 'name', 'specialty', 'rate', 'availability', 'whatsapp', 'horarios_disponibles']
+        fields = ['id', 'name', 'specialty', 'rate', 'availability', 'whatsapp', 'google_calendar_id', 'atiende_virtual', 'atiende_presencial', 'horarios_disponibles']
 
 
 class CitaMedicaSerializer(serializers.ModelSerializer):
@@ -28,7 +28,7 @@ class CitaMedicaSerializer(serializers.ModelSerializer):
         model = CitaMedica
         fields = [
             'id', 'usuario', 'especialista', 'especialista_nombre', 'nombre_especialista',
-            'especialidad', 'fecha_hora', 'lugar_o_link', 'estado', 'notas',
+            'especialidad', 'modalidad', 'fecha_hora', 'lugar_o_link', 'estado', 'notas',
             'puntos_otorgados', 'fecha_creacion'
         ]
         read_only_fields = ['usuario', 'puntos_otorgados', 'fecha_creacion']
@@ -37,6 +37,24 @@ class CitaMedicaSerializer(serializers.ModelSerializer):
         if obj.especialista:
             return obj.especialista.name
         return obj.nombre_especialista
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            validated_data['usuario'] = request.user
+        
+        cita = super().create(validated_data)
+        
+        # Gamificación de continuidad (3 citas con el mismo profesional)
+        if cita.usuario and cita.especialista:
+            registrar_actividad(cita.usuario, 'cita_medica')
+            citas_count = CitaMedica.objects.filter(usuario=cita.usuario, especialista=cita.especialista).count()
+            if citas_count >= 3:
+                registrar_actividad(cita.usuario, 'vinculo_confianza')
+        elif cita.usuario:
+            registrar_actividad(cita.usuario, 'cita_medica')
+
+        return cita
 
     def update(self, instance, validated_data):
         nuevo_estado = validated_data.get('estado', instance.estado)
@@ -48,16 +66,20 @@ class CitaMedicaSerializer(serializers.ModelSerializer):
 
 class ComentarioSerializer(serializers.ModelSerializer):
     usuario_nombre = serializers.SerializerMethodField()
+    total_likes = serializers.SerializerMethodField()
 
     class Meta:
         model = Comentario
-        fields = ['id', 'publicacion', 'usuario', 'usuario_nombre', 'texto', 'fecha_creacion']
+        fields = ['id', 'publicacion', 'usuario', 'usuario_nombre', 'texto', 'fecha_creacion', 'total_likes']
         read_only_fields = ['usuario', 'fecha_creacion']
 
     def get_usuario_nombre(self, obj):
         if obj.usuario:
             return obj.usuario.get_full_name() or obj.usuario.username or "Anónima"
         return "Anónima"
+
+    def get_total_likes(self, obj):
+        return obj.likes.count()
 
 
 class PublicacionSerializer(serializers.ModelSerializer):
@@ -103,6 +125,27 @@ class SolicitudContactoSerializer(serializers.ModelSerializer):
         read_only_fields = ['usuario', 'fecha_solicitud']
 
 
+class ProductoRelacionadoSerializer(serializers.ModelSerializer):
+    imagen_final = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Producto
+        fields = [
+            'id', 'nombre', 'descripcion', 'composicion', 'precio', 'marca',
+            'categoria', 'imagen_url', 'imagen', 'imagen_final', 'rating',
+            'reviews_count', 'disponible'
+        ]
+
+    def get_imagen_final(self, obj):
+        if obj.imagen:
+            request = self.context.get('request')
+            url = request.build_absolute_uri(obj.imagen.url) if request else obj.imagen.url
+            return url.replace('http://127.0.0.1:8000', 'http://10.0.2.2:8000').replace('http://localhost:8000', 'http://10.0.2.2:8000')
+        if obj.imagen_url:
+            return obj.imagen_url.replace('http://127.0.0.1:8000', 'http://10.0.2.2:8000').replace('http://localhost:8000', 'http://10.0.2.2:8000')
+        return ''
+
+
 class ProductoSerializer(serializers.ModelSerializer):
     imagen_final = serializers.SerializerMethodField()
     productos_relacionados = serializers.SerializerMethodField()
@@ -125,8 +168,8 @@ class ProductoSerializer(serializers.ModelSerializer):
         return ''
 
     def get_productos_relacionados(self, obj):
-        relacionados = Producto.objects.filter(categoria=obj.categoria).exclude(id=obj.id)[:6]
-        return ProductoSerializer(relacionados, many=True, context=self.context).data
+        relacionados = Producto.objects.filter(categoria=obj.categoria, disponible=True).exclude(id=obj.id)[:4]
+        return ProductoRelacionadoSerializer(relacionados, many=True, context=self.context).data
 
 
 class ItemCarritoSerializer(serializers.ModelSerializer):
