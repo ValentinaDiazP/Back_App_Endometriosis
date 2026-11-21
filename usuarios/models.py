@@ -13,6 +13,7 @@ class PerfilUsuaria(models.Model):
     fecha_nacimiento = models.DateField()
     fecha_diagnostico = models.DateField(null=True, blank=True)
     diagnostico = models.CharField(max_length=100, null=True, blank=True)
+    celular = models.CharField(max_length=15, null=True, blank=True)
 
     # True una vez que la usuaria completó, alguna vez, el flujo de
     # diagnóstico + cuestionario inicial. Controla si el próximo login

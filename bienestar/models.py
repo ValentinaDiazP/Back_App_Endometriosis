@@ -22,6 +22,8 @@ class Professional(models.Model):
         default='',
         verbose_name="ID de Google Calendar"
     )
+    atiende_virtual = models.BooleanField(default=True, verbose_name="Atiende virtual")
+    atiende_presencial = models.BooleanField(default=True, verbose_name="Atiende presencial")
 
     class Meta:
         verbose_name = "Profesional"
@@ -53,10 +55,16 @@ class CitaMedica(models.Model):
         ('CANCELADA', 'Cancelada (Rojo)'),
     )
 
+    MODALIDADES_CITA = (
+        ('VIRTUAL', 'Virtual'),
+        ('PRESENCIAL', 'Presencial'),
+    )
+
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='citas_medicas', verbose_name="Usuaria")
     especialista = models.ForeignKey(Professional, on_delete=models.SET_NULL, null=True, blank=True, related_name='citas', verbose_name="Especialista")
     nombre_especialista = models.CharField(max_length=150, blank=True, default='', verbose_name="Nombre especialista externo")
     especialidad = models.CharField(max_length=150, verbose_name="Especialidad")
+    modalidad = models.CharField(max_length=20, choices=MODALIDADES_CITA, default='VIRTUAL', verbose_name="Modalidad")
     fecha_hora = models.DateTimeField(verbose_name="Fecha y hora de la cita")
     lugar_o_link = models.CharField(max_length=255, blank=True, default='', verbose_name="Lugar o Link de atención")
     estado = models.CharField(max_length=30, choices=ESTADOS_CITA, default='PROGRAMADA', verbose_name="Estado de la cita")
@@ -136,6 +144,20 @@ class Comentario(models.Model):
     def __str__(self):
         nombre = self.usuario.username if self.usuario else "Anónima"
         return f"Comentario de {nombre} en post #{self.publicacion.id}"
+
+
+class MeGustaComentario(models.Model):
+    comentario = models.ForeignKey(Comentario, on_delete=models.CASCADE, related_name='likes', verbose_name="Comentario")
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes_comentarios', verbose_name="Usuaria")
+    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
+
+    class Meta:
+        verbose_name = "Me gusta de comentario"
+        verbose_name_plural = "Me gusta de comentarios"
+        unique_together = ('comentario', 'usuario')
+
+    def __str__(self):
+        return f"Like de {self.usuario.username} en comentario #{self.comentario.id}"
 
 
 class ReportePublicacion(models.Model):

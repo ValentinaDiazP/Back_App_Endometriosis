@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -50,6 +51,34 @@ class MeView(APIView):
     def get(self, request):
         perfil = PerfilUsuaria.objects.get(usuario=request.user)
         return Response(PerfilSerializer(perfil).data)
+
+    def delete(self, request):
+        user = request.user
+        user.delete()
+        return Response({'detail': 'Cuenta y datos eliminados correctamente.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class RecuperarPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username_or_celular = request.data.get('username') or request.data.get('celular')
+        nueva_password = request.data.get('password')
+        if not username_or_celular or not nueva_password:
+            return Response({'detail': 'Usuario/celular y nueva contraseña son obligatorios.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = User.objects.filter(username=username_or_celular).first()
+        if not user:
+            perfil = PerfilUsuaria.objects.filter(celular=username_or_celular).first()
+            if perfil:
+                user = perfil.usuario
+        
+        if not user:
+            return Response({'detail': 'No se encontró una cuenta con ese usuario o celular.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        user.set_password(nueva_password)
+        user.save()
+        return Response({'detail': 'Contraseña actualizada exitosamente.'})
 
 
 class CompletarOnboardingView(APIView):
